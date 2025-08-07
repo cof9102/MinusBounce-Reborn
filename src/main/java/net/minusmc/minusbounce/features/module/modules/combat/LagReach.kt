@@ -51,7 +51,7 @@ object LagReach: Module() {
     
     private fun clearPackets() {
         while (!packets.isEmpty())
-            PacketUtils.handlePacket(packets.take() as Packet<*>)
+            PacketUtils.handlePacket(packets.take())
         BlinkUtils.releasePacket()
     }
 
@@ -70,19 +70,23 @@ object LagReach: Module() {
         if (modeValue.get().equals("FakePlayer", true) || modeValue.get().equals("IntaveTest", true)) {
             clearPackets()
             if (fakePlayer == null) {
-                currentTarget = event.targetEntity as EntityLivingBase?
+                currentTarget = event.targetEntity as? EntityLivingBase ?: return
                 val target = currentTarget ?: return
-                val faker = EntityOtherPlayerMP(mc.theWorld, mc.netHandler.getPlayerInfo(target.uniqueID).gameProfile)
+n
+                val uniqueID = target.uniqueID ?: return
+                val playerInfo = mc.netHandler.getPlayerInfo(uniqueID) ?: return
+                val gameProfile = playerInfo.gameProfile ?: return
+                
+                val faker = EntityOtherPlayerMP(mc.theWorld, gameProfile)
 
                 faker.rotationYawHead = target.rotationYawHead
                 faker.renderYawOffset = target.renderYawOffset
-                faker.copyLocationAndAnglesFrom(currentTarget)
-                faker.rotationYawHead = target.rotationYawHead
+                faker.copyLocationAndAnglesFrom(target)
                 faker.health = target.health
-                val indices = (0..4).toList().toIntArray()
-                for (index in indices) {
-                    val equipmentInSlot = target.getEquipmentInSlot(index) ?: continue
-                    faker.setCurrentItemOrArmor(index, equipmentInSlot)
+                for (index in 0..4) {
+                    target.getEquipmentInSlot(index)?.let {
+                        faker.setCurrentItemOrArmor(index, it)
+                    }
                 }
                 mc.theWorld.addEntityToWorld(-1337, faker)
 
@@ -90,81 +94,86 @@ object LagReach: Module() {
                 shown = true
             } else {
                 if (event.targetEntity == fakePlayer) {
-                    attackEntity(currentTarget!!)
+                    currentTarget?.let { attackEntity(it) }
                     event.cancelEvent()
                 } else {
-                    fakePlayer = null
-                    currentTarget = event.targetEntity as EntityLivingBase?
+                    removeFakePlayer()
+                    currentTarget = event.targetEntity as? EntityLivingBase
                     shown = false
                 }
             }
         } else {
-            if (event.targetEntity != currentTarget!!) {
+            if (event.targetEntity != currentTarget) {
                 clearPackets()
-                currentTarget = event.targetEntity as EntityLivingBase?
+                currentTarget = event.targetEntity as? EntityLivingBase
             }
         }
     }
 
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
+        if (mc.thePlayer == null || mc.theWorld == null) return
+        
         if (!MinusBounce.combatManager.inCombat) {
-           removeFakePlayer()
+            removeFakePlayer()
         }
 
-        if (modeValue.get().equals("FakePlayer", true) || modeValue.get().equals("IntaveTest", true) ) {
+        if (modeValue.get().equals("FakePlayer", true) || modeValue.get().equals("IntaveTest", true)) {
             if (onlyAuraValue.get() && !MinusBounce.moduleManager[KillAura::class.java]!!.state) {
                 removeFakePlayer()
+                return
             }
-            mc.theWorld ?: return
-            mc.thePlayer ?: return 
+            
             fakePlayer ?: return
             val target = currentTarget ?: return
-            if (EntityUtils.isRendered(fakePlayer!!) && (target.isDead || !EntityUtils.isRendered(target))) {
+
+            if (fakePlayer != null && EntityUtils.isRendered(fakePlayer!!) && 
+                (target.isDead || !EntityUtils.isRendered(target))) {
                 removeFakePlayer()
+                return
             }
 
-            if (currentTarget != null && fakePlayer != null) {
-                fakePlayer!!.health = target.health
-                val indices = (0..4).toList().toIntArray()
-                for (index in indices) {
-                    val equipmentInSlot = target.getEquipmentInSlot(index) ?: continue
-                    fakePlayer!!.setCurrentItemOrArmor(index, equipmentInSlot)
+            fakePlayer?.health = target.health
+            for (index in 0..4) {
+                target.getEquipmentInSlot(index)?.let {
+                    fakePlayer?.setCurrentItemOrArmor(index, it)
                 }
             }
-            if (modeValue.get().equals("IntaveTest", true) && mc.thePlayer.ticksExisted % intavetesthurttime.get() == 0) {
-                if (fakePlayer != null) {
-                    fakePlayer!!.rotationYawHead = target.rotationYawHead
-                    fakePlayer!!.renderYawOffset = target.renderYawOffset
-                    fakePlayer!!.copyLocationAndAnglesFrom(target)
-                    fakePlayer!!.rotationYawHead = target.rotationYawHead
+
+            when {
+                modeValue.get().equals("IntaveTest", true) && mc.thePlayer.ticksExisted % intavetesthurttime.get() == 0 -> {
+                    fakePlayer?.apply {
+                        rotationYawHead = target.rotationYawHead
+                        renderYawOffset = target.renderYawOffset
+                        copyLocationAndAnglesFrom(target)
+                    }
+                    pulseTimer.reset()
                 }
-                pulseTimer.reset()
-            } else if (modeValue.get().equals("FakePlayer", true) && pulseTimer.hasTimePassed(pulseDelayValue.get().toLong())) {
-                if (fakePlayer != null) {
-                    fakePlayer!!.rotationYawHead = target.rotationYawHead
-                    fakePlayer!!.renderYawOffset = target.renderYawOffset
-                    fakePlayer!!.copyLocationAndAnglesFrom(target)
-                    fakePlayer!!.rotationYawHead = target.rotationYawHead
+                modeValue.get().equals("FakePlayer", true) && pulseTimer.hasTimePassed(pulseDelayValue.get().toLong()) -> {
+                    fakePlayer?.apply {
+                        rotationYawHead = target.rotationYawHead
+                        renderYawOffset = target.renderYawOffset
+                        copyLocationAndAnglesFrom(target)
+                    }
+                    pulseTimer.reset()
                 }
-                pulseTimer.reset()
             }
 
-            if (!shown && target.uniqueID != null && mc.netHandler.getPlayerInfo(target.uniqueID) != null && mc.netHandler.getPlayerInfo(target.uniqueID).gameProfile != null) {
-                val faker = EntityOtherPlayerMP(mc.theWorld, mc.netHandler.getPlayerInfo(target.uniqueID).gameProfile)
-
-                faker.rotationYawHead = target.rotationYawHead
-                faker.renderYawOffset = target.renderYawOffset
-                faker.copyLocationAndAnglesFrom(target)
-                faker.rotationYawHead = target.rotationYawHead
-                faker.health = target.health
-                val indices = (0..4).toList().toIntArray()
-                for (index in indices) {
-                    val equipmentInSlot = target.getEquipmentInSlot(index) ?: continue
-                    faker.setCurrentItemOrArmor(index, equipmentInSlot)
+            if (!shown) {
+                val uniqueID = target.uniqueID ?: return
+                val playerInfo = mc.netHandler.getPlayerInfo(uniqueID) ?: return
+                val gameProfile = playerInfo.gameProfile ?: return
+                
+                val faker = EntityOtherPlayerMP(mc.theWorld, gameProfile).apply {
+                    rotationYawHead = target.rotationYawHead
+                    renderYawOffset = target.renderYawOffset
+                    copyLocationAndAnglesFrom(target)
+                    health = target.health
+                    for (i in 0..4) {
+                        target.getEquipmentInSlot(i)?.let { setCurrentItemOrArmor(i, it) }
+                    }
                 }
                 mc.theWorld.addEntityToWorld(-1337, faker)
-
                 fakePlayer = faker
                 shown = true
             }
@@ -180,19 +189,23 @@ object LagReach: Module() {
     fun onPacket(event: PacketEvent) {
         val packet = event.packet
         if (onlyAuraValue.get() && !MinusBounce.moduleManager[KillAura::class.java]!!.state) return
-        
-        if (modeValue.equals("TargetPackets")) {
-            if (packet is S14PacketEntity && MinusBounce.combatManager.inCombat) {
-                if (packet.getEntity(mc.theWorld) == currentTarget) {
-                    event.cancelEvent()
-                    packets.add(packet as Packet<INetHandlerPlayClient>)
+
+        when {
+            modeValue.get().equals("TargetPackets", ignoreCase = true) -> {
+                if (packet is S14PacketEntity && MinusBounce.combatManager.inCombat) {
+                    if (packet.getEntity(mc.theWorld) == currentTarget) {
+                        event.cancelEvent()
+                        packets.add(packet)
+                    }
                 }
             }
-        } else if (modeValue.equals("AllIncomingPackets")) {
-            if (packet.javaClass.simpleName.startsWith("S", ignoreCase = true) && MinusBounce.combatManager.inCombat) {
-                if (mc.thePlayer.ticksExisted < 20) return
-                event.cancelEvent()
-                packets.add(packet as Packet<INetHandlerPlayClient>)
+            modeValue.get().equals("AllIncomingPackets", ignoreCase = true) -> {
+                if (packet.javaClass.simpleName.startsWith("S", true) && 
+                    MinusBounce.combatManager.inCombat &&
+                    mc.thePlayer.ticksExisted >= 20) {
+                    event.cancelEvent()
+                    packets.add(packet)
+                }
             }
         }
     }
