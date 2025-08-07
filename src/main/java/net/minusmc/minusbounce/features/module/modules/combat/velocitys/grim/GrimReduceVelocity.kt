@@ -1,5 +1,6 @@
-package net.minusmc.minusbounce.features.module.modules.combat.velocitys
+package net.minusmc.minusbounce.features.module.modules.combat.velocitys.grim
 
+import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
 import net.minusmc.minusbounce.event.UpdateEvent
 import net.minusmc.minusbounce.event.PacketEvent
 import net.minusmc.minusbounce.features.module.modules.combat.Velocity

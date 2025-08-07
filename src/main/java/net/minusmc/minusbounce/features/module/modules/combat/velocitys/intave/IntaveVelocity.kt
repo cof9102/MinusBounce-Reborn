@@ -1,5 +1,6 @@
-package net.minusmc.minusbounce.features.module.modules.combat.velocitys
+package net.minusmc.minusbounce.features.module.modules.combat.velocitys.intave
 
+import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
 import net.minusmc.minusbounce.event.PacketEvent
 import net.minusmc.minusbounce.event.StrafeEvent
 import net.minusmc.minusbounce.features.module.modules.combat.Velocity
