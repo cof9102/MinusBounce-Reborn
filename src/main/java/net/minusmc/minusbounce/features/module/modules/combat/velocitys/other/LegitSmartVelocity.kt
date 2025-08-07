@@ -4,7 +4,6 @@ import net.minusmc.minusbounce.features.module.modules.combat.velocitys.Velocity
 import net.minusmc.minusbounce.event.UpdateEvent
 import net.minusmc.minusbounce.event.PacketEvent
 import net.minusmc.minusbounce.features.module.modules.combat.Velocity
-import net.minusmc.minusbounce.utils.extensions.tryJump
 import net.minusmc.minusbounce.value.IntegerValue
 import net.minecraft.network.play.server.S12PacketEntityVelocity
 
@@ -36,7 +35,7 @@ class LegitSmartVelocity : VelocityMode("LegitSmart") {
                 } else {
                     legitSmartJumpCount++
                     if (thePlayer.ticksExisted % 5 != 0) {
-                        thePlayer.jump() // Sửa từ tryJump() thành jump()
+                        thePlayer.jump()
                     }
                 }
             } else if (thePlayer.hurtTime == 8) {

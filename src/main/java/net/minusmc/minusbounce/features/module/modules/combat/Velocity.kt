@@ -92,6 +92,8 @@ class Velocity : Module() {
     
     @EventTarget
     fun onStrafe(event: StrafeEvent) {
+        if (mc.thePlayer.isInWater || mc.thePlayer.isInLava || mc.thePlayer.isInWeb || !shouldAffect)
+            return
         mode.onStrafe(event)
     }
     
