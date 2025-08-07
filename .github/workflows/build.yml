@@ -1,5 +1,3 @@
-name: build
-
 on:
   - push
 
@@ -21,13 +19,19 @@ jobs:
 
       - name: Set outputs
         id: vars
-        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Build
-        run: chmod +x ./gradlew && ./gradlew setupCiWorkspace && ./gradlew build
+        run: chmod +x ./gradlew && ./gradlew setupCiWorkspace build
+
+      - name: Debug build artifacts
+        run: ls -lh build/libs
 
       - name: Rename build artifacts
-        run: mv build/libs/MinusBounceReborn-*.jar build/libs/MinusBounceReborn-build.jar
+        run: |
+          JAR_FILE=$(find build/libs -name 'MinusBounceReborn-*.jar' | head -n 1)
+          echo "Found jar file: $JAR_FILE"
+          mv "$JAR_FILE" build/libs/MinusBounceReborn-build.jar
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
