@@ -1,5 +1,6 @@
 package net.minusmc.minusbounce.features.module.modules.movement
 
+import net.minusmc.minusbounce.MinusBounce
 import net.minusmc.minusbounce.event.StrafeEvent
 import net.minusmc.minusbounce.event.UpdateEvent
 import net.minusmc.minusbounce.event.EventTarget
@@ -9,6 +10,7 @@ import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.utils.RotationUtils
 import net.minecraft.util.MathHelper
+import kotlin.math.abs
 
 @ModuleInfo(name = "StrafeFix", spacedName = "Strafe Fix", description = "Fixes strafing movement", category = ModuleCategory.MOVEMENT)
 class StrafeFix : Module() {
@@ -59,7 +61,7 @@ class StrafeFix : Module() {
         val angleDiff = ((MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw - yaw - 22.5f - 135.0f) + 180.0) / 45.0
         val calcYaw = if (isSilent) yaw + 45.0f * angleDiff.toInt() else yaw
 
-        val calcMoveDir = maxOf(kotlin.math.abs(strafe), kotlin.math.abs(forward))
+        val calcMoveDir = maxOf(abs(strafe), abs(forward))
         val calcMultiplier = MathHelper.sqrt_float((calcMoveDir * calcMoveDir) / minOf(1.0f, calcMoveDir * 2.0f))
 
         if (isSilent) {
@@ -83,21 +85,13 @@ class StrafeFix : Module() {
             strafe *= factor
             forward *= factor
 
-            val radYaw = Math.toRadians(calcYaw.toDouble()).toFloat()
+            val radYaw = (calcYaw * Math.PI / 180F).toFloat()
             val sin = MathHelper.sin(radYaw)
             val cos = MathHelper.cos(radYaw)
 
-            mc.thePlayer.motionX = (strafe * cos - forward * sin).toDouble()
-            mc.thePlayer.motionZ = (forward * cos + strafe * sin).toDouble()
+            mc.thePlayer.motionX += (strafe * cos - forward * sin).toDouble()
+            mc.thePlayer.motionZ += (forward * cos + strafe * sin).toDouble()
         }
         event.cancelEvent()
-    }
-    
-    companion object {
-        fun applyFix(isSilent: Boolean) {
-            MinusBounce.moduleManager[StrafeFix::class.java]?.apply {
-                applyForceStrafe(isSilent, true)
-            }
-        }
     }
 }
