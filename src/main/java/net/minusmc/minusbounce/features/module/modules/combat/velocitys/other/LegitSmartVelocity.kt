@@ -6,9 +6,10 @@ import net.minusmc.minusbounce.event.PacketEvent
 import net.minusmc.minusbounce.features.module.modules.combat.Velocity
 import net.minusmc.minusbounce.utils.extensions.tryJump
 import net.minusmc.minusbounce.value.IntegerValue
+import net.minecraft.network.play.server.S12PacketEntityVelocity
 
 class LegitSmartVelocity : VelocityMode("LegitSmart") {
-    private val legitSmartJumpLimit = IntegerValue("JumpLimit", 2, 1..5)
+    private val legitSmartJumpLimit = IntegerValue("JumpLimit", 2, 1, 5)
     private var legitSmartJumpCount = 0
     private var hasReceivedVelocity = false
 
@@ -16,7 +17,7 @@ class LegitSmartVelocity : VelocityMode("LegitSmart") {
         val packet = event.packet
         val thePlayer = mc.thePlayer ?: return
 
-        if (packet is net.minecraft.network.play.server.S12PacketEntityVelocity && thePlayer.entityId == packet.entityID) {
+        if (packet is S12PacketEntityVelocity && thePlayer.entityId == packet.entityID) {
             hasReceivedVelocity = true
         }
     }
@@ -35,7 +36,7 @@ class LegitSmartVelocity : VelocityMode("LegitSmart") {
                 } else {
                     legitSmartJumpCount++
                     if (thePlayer.ticksExisted % 5 != 0) {
-                        thePlayer.tryJump()
+                        thePlayer.jump() // Sửa từ tryJump() thành jump()
                     }
                 }
             } else if (thePlayer.hurtTime == 8) {

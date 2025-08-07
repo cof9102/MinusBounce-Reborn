@@ -90,6 +90,11 @@ class Velocity : Module() {
         mode.onTick(event)
     }
     
+    @EventTarget
+    fun onStrafe(event: StrafeEvent) {
+        mode.onStrafe(event)
+    }
+    
     override val tag: String
         get() = modeValue.get()
 

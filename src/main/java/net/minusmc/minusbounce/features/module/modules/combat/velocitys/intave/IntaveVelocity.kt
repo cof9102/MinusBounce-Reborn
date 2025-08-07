@@ -3,14 +3,12 @@ package net.minusmc.minusbounce.features.module.modules.combat.velocitys.intave
 import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
 import net.minusmc.minusbounce.event.PacketEvent
 import net.minusmc.minusbounce.event.StrafeEvent
-import net.minusmc.minusbounce.features.module.modules.combat.Velocity
-import net.minusmc.minusbounce.utils.extensions.tryJump
 import net.minusmc.minusbounce.value.IntegerValue
 import net.minecraft.network.play.server.S12PacketEntityVelocity
 import net.minecraft.network.play.server.S27PacketExplosion
 
 class IntaveVelocity : VelocityMode("Intave") {
-    private val intaveJumpResetCount = IntegerValue("JumpResetCount", 2, 1..10)
+    private val intaveJumpResetCount = IntegerValue("JumpResetCount", 2, 1, 10)
     private var intaveJumpCount = 0
     private var hasReceivedVelocity = false
     private var intaveLastAttackTime = 0L
@@ -49,7 +47,7 @@ class IntaveVelocity : VelocityMode("Intave") {
                     player.onGround && 
                     player.isSprinting && 
                     mc.currentScreen == null) {
-                    player.tryJump()
+                    player.jump()
                     intaveJumpCount = 0
                 }
             } else {
