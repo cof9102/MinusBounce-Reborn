@@ -26,8 +26,8 @@ object LagReach: Module() {
     private val pulseTimer = MSTimer()
     private var currentTarget: EntityLivingBase? = null
     private var shown = false
-    
-    private val packets = LinkedBlockingQueue<Packet<INetHandlerPlayClient>>()
+
+    private val packets = LinkedBlockingQueue<Packet<*>>()
 
 
     override fun onEnable() {
@@ -51,7 +51,7 @@ object LagReach: Module() {
     
     private fun clearPackets() {
         while (!packets.isEmpty())
-            PacketUtils.handlePacket(packets.take())
+            PacketUtils.handlePacket(packets.take() as Packet<INetHandlerPlayClient>) 
         BlinkUtils.releasePacket()
     }
 
@@ -72,7 +72,7 @@ object LagReach: Module() {
             if (fakePlayer == null) {
                 currentTarget = event.targetEntity as? EntityLivingBase ?: return
                 val target = currentTarget ?: return
-n
+
                 val uniqueID = target.uniqueID ?: return
                 val playerInfo = mc.netHandler.getPlayerInfo(uniqueID) ?: return
                 val gameProfile = playerInfo.gameProfile ?: return
