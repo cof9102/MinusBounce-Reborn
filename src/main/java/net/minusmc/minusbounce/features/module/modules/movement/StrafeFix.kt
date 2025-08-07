@@ -58,7 +58,7 @@ class StrafeFix : Module() {
         var friction = event.friction
         var factor = strafe * strafe + forward * forward
 
-        val angleDiff = ((MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw - yaw - 22.5f - 135.0f) + 180.0) / 45.0
+        val angleDiff = (MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw - yaw - 22.5f - 135.0f) + 180.0 ) / 45.0
         val calcYaw = if (isSilent) yaw + 45.0f * angleDiff.toInt() else yaw
 
         val calcMoveDir = maxOf(abs(strafe), abs(forward))
