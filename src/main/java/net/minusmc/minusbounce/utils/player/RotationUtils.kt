@@ -113,6 +113,18 @@ object RotationUtils : MinecraftInstance(), Listenable {
         this.lastRotationSpeed = minRotationSpeed
         active = true
     }
+    
+    fun setRotation(rotation: Rotation) {
+        if (rotation.yaw.isNaN() || rotation.pitch.isNaN() || rotation.pitch > 90 || rotation.pitch < -90) return
+
+        val current = currentRotation ?: rotation
+
+        targetRotation = rotation as Rotation?
+
+        if (Debugger.RotationDebug) {
+            chat("Target Rotation: ${targetRotation?.yaw}, ${targetRotation?.pitch}")
+        }
+    }
 
     private fun resetRotation() {
         keepLength = 0
