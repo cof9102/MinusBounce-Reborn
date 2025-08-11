@@ -217,7 +217,7 @@ public abstract class MixinMinecraft {
 
     @Inject(method = "createDisplay", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/Display;setTitle(Ljava/lang/String;)V", shift = At.Shift.AFTER))
     private void createDisplay(CallbackInfo callbackInfo) {
-        Display.setTitle(MinusBounce.CLIENT_NAME + " build " + MinusBounce.CLIENT_VERSION);
+        Display.setTitle(MinusBounce.CLIENT_NAME + " Reborn " + MinusBounce.CLIENT_VERSION);
     }
 
     @Inject(method = "runGameLoop", at = @At(value = "INVOKE", target = "Lnet/minecraft/profiler/Profiler;startSection(Ljava/lang/String;)V", ordinal = 1))
@@ -262,10 +262,7 @@ public abstract class MixinMinecraft {
         return (Sys.getTime() * 1000) / Sys.getTimerResolution();
     }
 
-    /**
-     * @author toidicakhia, CCBluex
-     * @reason RenderUtils and TickBase
-     */
+
     @Overwrite
     private void runGameLoop() throws IOException {
         final long currentTime = getTime();
@@ -508,10 +505,7 @@ public abstract class MixinMinecraft {
         // no-op
     }
 
-    /**
-     * @author CCBlueX
-     * @reason event and hit delay fix
-     */
+
     @Overwrite
     public void sendClickBlockToController(boolean leftClick) {
         if(!leftClick)
@@ -534,9 +528,7 @@ public abstract class MixinMinecraft {
         }
     }
 
-    /**
-     * @author CCBlueX
-     */
+
     @ModifyConstant(method = "getLimitFramerate", constant = @Constant(intValue = 30))
     public int getLimitFramerate(int constant) {
         return 60;
