@@ -88,6 +88,13 @@ class Velocity : Module() {
             event.isCancelled = true
         }
     }
+    
+    @EventTarget
+    fun onStrafe(event: StrafeEvent) {
+        if (mc.thePlayer.isInWater || mc.thePlayer.isInLava || mc.thePlayer.isInWeb || !shouldAffect)
+            return
+        mode.onStrafe(event)
+    }
 
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
