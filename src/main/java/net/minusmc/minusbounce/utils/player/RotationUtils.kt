@@ -120,10 +120,6 @@ object RotationUtils : MinecraftInstance(), Listenable {
         val current = currentRotation ?: rotation
 
         targetRotation = rotation as Rotation?
-
-        if (Debugger.RotationDebug) {
-            chat("Target Rotation: ${targetRotation?.yaw}, ${targetRotation?.pitch}")
-        }
     }
 
     private fun resetRotation() {
