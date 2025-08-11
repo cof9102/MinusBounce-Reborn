@@ -4,7 +4,7 @@ import net.minusmc.minusbounce.features.module.modules.combat.velocitys.Velocity
 import net.minusmc.minusbounce.event.PacketEvent
 import net.minusmc.minusbounce.event.UpdateEvent
 import net.minusmc.minusbounce.utils.Rotation
-import net.minusmc.minusbounce.utils.RotationUtils
+import net.minusmc.minusbounce.utils.player.RotationUtils
 import net.minecraft.network.play.server.S12PacketEntityVelocity
 import kotlin.math.atan2
 import kotlin.math.cos
