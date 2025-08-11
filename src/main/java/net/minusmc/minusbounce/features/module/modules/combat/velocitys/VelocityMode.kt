@@ -6,6 +6,8 @@ import net.minusmc.minusbounce.event.PreMotionEvent
 import net.minusmc.minusbounce.event.ReceivedPacketEvent
 import net.minusmc.minusbounce.event.SentPacketEvent
 import net.minusmc.minusbounce.event.TickEvent
+import net.minusmc.minusbounce.event.PacketEvent
+import net.minusmc.minusbounce.event.StrafeEvent
 import net.minusmc.minusbounce.event.EntityDamageEvent
 import net.minusmc.minusbounce.event.AttackEvent
 import net.minusmc.minusbounce.event.KnockbackEvent
@@ -30,6 +32,7 @@ abstract class VelocityMode(val modeName: String): MinecraftInstance() {
 	open fun onMove() {}
 
 	open fun onUpdate() {}
+	open fun onPacket(event: PacketEvent) {}
 	open fun onStrafe(event: StrafeEvent) {}
 	open fun onSentPacket(event: SentPacketEvent) {}
 	open fun onReceivedPacket(event: ReceivedPacketEvent) {}
