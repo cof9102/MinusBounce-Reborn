@@ -3,7 +3,7 @@ package net.minusmc.minusbounce.features.module.modules.combat.velocitys.normal
 import net.minecraft.network.play.server.S12PacketEntityVelocity
 import net.minusmc.minusbounce.event.*
 import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
-import net.minusmc.minusbounce.utils.MSTimer
+import net.minusmc.minusbounce.utils.timer.MSTimer // what the fuck nigga
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.IntegerValue
 import java.util.*
