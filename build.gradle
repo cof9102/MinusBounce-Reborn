@@ -136,6 +136,7 @@ configurations {
 tasks.named("runClient").configure {
     classpath += sourceSets.main.runtimeClasspath
 
-tasks.reobfShadowJar.mustRunAfter shadowJar
+    tasks.reobfShadowJar.mustRunAfter shadowJar
 
-tasks.reobfJar.dependsOn(shadowJar)
+    tasks.reobfJar.dependsOn(shadowJar)
+}
