@@ -63,6 +63,13 @@ class Velocity : Module() {
     fun onSentPacket(event: SentPacketEvent) {
         mode.onSentPacket(event)
     }
+    
+    @EventTarget
+    fun onStrafe(event: StrafeEvent) {
+        if (mc.thePlayer.isInWater || mc.thePlayer.isInLava || mc.thePlayer.isInWeb || !shouldAffect)
+            return
+        mode.onStrafe(event)
+    }
 
     @EventTarget
     fun onReceivedPacket(event: ReceivedPacketEvent) {

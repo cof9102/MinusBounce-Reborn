@@ -30,6 +30,7 @@ abstract class VelocityMode(val modeName: String): MinecraftInstance() {
 	open fun onMove() {}
 
 	open fun onUpdate() {}
+	open fun onStrafe(event: StrafeEvent) {}
 	open fun onSentPacket(event: SentPacketEvent) {}
 	open fun onReceivedPacket(event: ReceivedPacketEvent) {}
 	open fun onJump(event: JumpEvent) {}
