@@ -22,8 +22,7 @@ import net.minecraft.potion.Potion
  * Shows a list of active potion effects
  */
 @ElementInfo(name = "Effects")
-class Effects(x: Double = 2.0, y: Double = 10.0, scale: Float = 1F,
-              side: Side = Side(Side.Horizontal.RIGHT, Side.Vertical.DOWN)) : Element(x, y, scale, side) {
+class Effects(x: Double = 2.0, y: Double = 10.0, scale: Float = 1F, side: Side = Side(Side.Horizontal.RIGHT, Side.Vertical.DOWN)) : Element(x, y, scale, side) {
 
     private val anotherStyle = BoolValue("New", false)
     private val fontValue = FontValue("Font", Fonts.font35)
@@ -46,18 +45,20 @@ class Effects(x: Double = 2.0, y: Double = 10.0, scale: Float = 1F,
 
             val potion = Potion.potionTypes[effect.potionID]
 
-            val number = when {
-                effect.amplifier == 1 -> "II"
-                effect.amplifier == 2 -> "III"
-                effect.amplifier == 3 -> "IV"
-                effect.amplifier == 4 -> "V"
-                effect.amplifier == 5 -> "VI"
-                effect.amplifier == 6 -> "VII"
-                effect.amplifier == 7 -> "VIII"
-                effect.amplifier == 8 -> "IX"
-                effect.amplifier == 9 -> "X"
-                effect.amplifier > 10 -> "X+"
-                else -> "I"
+            val amplifier = (effect.amplifier + 1).coerceIn(1, 11)
+
+            val number = when (amplifier) {
+                1 -> "I"
+                2 -> "II"
+                3 -> "III"
+                4 -> "IV"
+                5 -> "V"
+                6 -> "VI"
+                7 -> "VII"
+                8 -> "VIII"
+                9 -> "IX"
+                10 -> "X"
+                else -> "X+"
             }
 
             val duration = if (effect.isPotionDurationMax) 30 else effect.duration / 20
@@ -89,7 +90,7 @@ class Effects(x: Double = 2.0, y: Double = 10.0, scale: Float = 1F,
         if (width == 0F)
             width = if (side.horizontal == Side.Horizontal.RIGHT) -40F else 40F
 
-        if (y == 0F) // alr checked above
+        if (y == 0F)
             y = if (side.vertical == Side.Vertical.UP) fontRenderer.FONT_HEIGHT.toFloat() else -fontRenderer.FONT_HEIGHT.toFloat()
 
         return Border(0F, 0F, width, y)

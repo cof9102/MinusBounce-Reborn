@@ -7,13 +7,19 @@ package net.minusmc.minusbounce.utils.timer
 
 class MSTimer {
     var time = -1L
-    fun hasTimePassed(MS: Long): Boolean {
-        return System.currentTimeMillis() >= time + MS
+
+    fun hasTimePassed(delay: Int) = hasTimePassed(delay.toLong())
+
+    fun hasTimePassed(delay: Long): Boolean {
+        return System.currentTimeMillis() >= time + delay
     }
 
-    fun hasTimeLeft(MS: Long): Long {
-        return MS + time - System.currentTimeMillis()
+    fun hasTimeLeft(delay: Long): Long {
+        return delay + time - System.currentTimeMillis()
     }
+
+    val reachedTime: Long
+        get() = System.currentTimeMillis() - time
 
     fun reset() {
         time = System.currentTimeMillis()

@@ -1,59 +1,152 @@
 package net.minusmc.minusbounce.features.module.modules.combat
 
-import net.minusmc.minusbounce.event.EventTarget
-import net.minusmc.minusbounce.event.UpdateEvent
-import net.minusmc.minusbounce.value.BoolValue
-import net.minusmc.minusbounce.value.FloatValue
-import net.minusmc.minusbounce.value.IntegerValue
-import net.minusmc.minusbounce.value.ListValue
+import net.minecraft.entity.EntityLivingBase
+import net.minecraft.network.play.server.S12PacketEntityVelocity
+import net.minusmc.minusbounce.event.*
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
-import net.minusmc.minusbounce.utils.EntityUtils
-import net.minecraft.entity.EntityLivingBase
-import net.minecraft.entity.player.EntityPlayer
+import net.minusmc.minusbounce.utils.extensions.getDistanceToEntityBox
+import net.minusmc.minusbounce.utils.player.MovementUtils
+import net.minusmc.minusbounce.value.FloatValue
+import net.minusmc.minusbounce.value.IntegerValue
+import kotlin.random.Random
 
-// From LB+r
-@ModuleInfo(name = "TimerRange", description = "Automatically speeds up/down when you are near an enemy.", category = ModuleCategory.COMBAT)
+@ModuleInfo(name = "TimerRange", "Timer Range", "Make player reach faster", category = ModuleCategory.COMBAT)
 class TimerRange : Module() {
-    private val rangeStart: FloatValue = object : FloatValue("Range-Start", 3.5F, 0.0F, 6.0F) {
-        override fun onChanged(oldValue: Float, newValue: Float) {
-            if (rangeStop.get() > newValue) {
-                set(rangeStop.get())
-            }
-        }
-    }
-    private val rangeStop: FloatValue = object : FloatValue("Range-Stop", 3.4F, 0.0F, 6.0F) {
-        override fun onChanged(oldValue: Float, newValue: Float) {
-            if (rangeStart.get() < newValue) {
-                set(rangeStart.get())
-            }
-        }
-    }
-    private val timerValue = FloatValue("Timer", 1.5F, 0.1F, 2F)
-    
-    @EventTarget
-    fun onUpdate(event: UpdateEvent) {
-        for (entity in mc.theWorld.loadedEntityList) {
-            if (entity is EntityPlayer && EntityUtils.isSelected(entity, true)) {
-                if (mc.thePlayer.getDistanceToEntity(entity) <= rangeStart.get()) {
-                    mc.timer.timerSpeed = timerValue.get()
-                }
-                if (mc.thePlayer.getDistanceToEntity(entity) <= rangeStop.get()) {
-                    mc.timer.timerSpeed = 1.0F
-                }
-                if (mc.thePlayer.getDistanceToEntity(entity) > rangeStart.get()) {
-                    mc.timer.timerSpeed = 1.0F
-                }
-            }
-        }
+
+    private var playerTicks = 0
+    private var smartTick = 0
+    private var cooldownTick = 0
+
+    private var confirmAttack = false
+
+    private var confirmKnockback = false
+
+    private val ticksValue = IntegerValue("Ticks", 10, 1, 20)
+    private val timerBoostValue = FloatValue("TimerBoost", 1.5f, 0.01f, 35f)
+    private val timerChargedValue = FloatValue("TimerCharged", 0.45f, 0.05f, 5f)
+
+    // Normal Mode Settings
+    private val rangeValue = FloatValue("Range", 3.5f, 1f, 5f)
+    private val cooldownTickValue = IntegerValue("CooldownTick", 10, 1, 50)
+
+    override val tag: String
+        get() = timerBoostValue.get().toString() + "x"
+
+    private fun timerReset() {
+        mc.timer.timerSpeed = 1f
     }
 
     override fun onEnable() {
-        mc.timer.timerSpeed = 1.0F
+        timerReset()
     }
 
     override fun onDisable() {
-        mc.timer.timerSpeed = 1.0F
+        timerReset()
+        smartTick = 0
+        cooldownTick = 0
+        playerTicks = 0
+        confirmAttack = false
+        confirmKnockback = false
+    }
+
+    @EventTarget
+    fun onWorld(event: WorldEvent) {
+        timerReset()
+        smartTick = 0
+        cooldownTick = 0
+        playerTicks = 0
+        confirmAttack = false
+        confirmKnockback = false
+    }
+
+    /**
+     * Attack event
+     */
+    @EventTarget
+    fun onAttack(event: AttackEvent) {
+        if (event.targetEntity !is EntityLivingBase || shouldResetTimer()) {
+            timerReset()
+            return
+        } 
+        
+        confirmAttack = true
+
+
+        val targetEntity = event.targetEntity
+        val entityDistance = mc.thePlayer.getDistanceToEntityBox(targetEntity)
+
+        smartTick++
+        cooldownTick++
+
+        val shouldSlowed = cooldownTick >= cooldownTickValue.get() && entityDistance <= rangeValue.get()
+
+        if (shouldSlowed && confirmAttack) {
+            confirmAttack = false
+            playerTicks = ticksValue.get()
+
+            confirmKnockback = true
+            cooldownTick = 0
+            smartTick = 0
+        } else {
+            timerReset()
+        }
+    }
+
+    /**
+     * Update event
+     */
+    @EventTarget
+    fun onUpdate(event: UpdateEvent) {
+        // Randomize the timer & charged delay a bit, to bypass some AntiCheat
+        val timerboost = Random.nextDouble(0.5, 0.56)
+        val charged = Random.nextDouble(0.75, 0.91)
+
+        if (playerTicks <= 0) {
+            timerReset()
+            return
+        }
+
+        val tickProgress = playerTicks.toDouble() / ticksValue.get().toDouble()
+        val playerSpeed = when {
+            tickProgress < timerboost -> timerBoostValue.get()
+            tickProgress < charged -> timerChargedValue.get()
+            else -> 1f
+        }
+
+        val speedAdjustment = if (playerSpeed >= 0) playerSpeed else 1f + ticksValue.get() - playerTicks
+        val adjustedTimerSpeed = maxOf(speedAdjustment, 0f)
+
+        mc.timer.timerSpeed = adjustedTimerSpeed
+
+        playerTicks--
+    }
+
+    /**
+     * Separate condition to make it cleaner
+     */
+    private fun shouldResetTimer() = playerTicks >= 1 || mc.thePlayer.isSpectator 
+        || mc.thePlayer.isDead || mc.thePlayer.isInWater || mc.thePlayer.isInLava 
+        || mc.thePlayer.isInWeb || mc.thePlayer.isOnLadder || mc.thePlayer.isRiding
+
+    /**
+     * Lagback Reset is Inspired from Nextgen TimerRange
+     * Reset Timer on Lagback & Knockback.
+     */
+    @EventTarget
+    fun onPacket(event: ReceivedPacketEvent) {
+        val packet = event.packet
+
+        if (MovementUtils.isMoving && !shouldResetTimer() && mc.timer.timerSpeed > 1.0 || mc.timer.timerSpeed < 1.0) {
+
+            // Check for knockback
+            if (confirmKnockback) {
+                if (packet is S12PacketEntityVelocity && mc.thePlayer.entityId == packet.entityID && packet.motionY > 0 && (packet.motionX != 0 || packet.motionZ != 0)) {
+                    confirmKnockback = false
+                    timerReset()
+                }
+            }
+        }
     }
 }

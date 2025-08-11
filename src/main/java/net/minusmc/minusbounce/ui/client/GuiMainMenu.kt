@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.util.ResourceLocation
 import net.minecraftforge.fml.client.GuiModList
 import net.minusmc.minusbounce.MinusBounce
+import net.minusmc.minusbounce.plugin.PluginGuiManager
 import net.minusmc.minusbounce.ui.client.altmanager.GuiAltManager
 import net.minusmc.minusbounce.ui.font.Fonts
 import net.minusmc.minusbounce.utils.render.RenderUtils
@@ -23,20 +24,20 @@ class GuiMainMenu : GuiScreen(), GuiYesNoCallback {
     override fun initGui() {
         val defaultHeight = (this.height / 2.5).toInt()
 
-        buttonList.add(MainMenuButton(0, width / 2 - 55, defaultHeight, "Singleplayer"))
-        buttonList.add(MainMenuButton(1, width / 2 - 55, defaultHeight + 25 + 10, "Multiplayer"))
-        buttonList.add(MainMenuButton(2, width / 2 - 55, defaultHeight + 70, "Alt manager"))
-        // buttonList.add(MainMenuButton(3, width / 2 + 32, defaultHeight + 45, "Mods and plugins"))
+        buttonList.add(MainMenuButton(0, width / 2 - 148, defaultHeight, "Singleplayer"))
+        buttonList.add(MainMenuButton(1, width / 2 + 32, defaultHeight, "Multiplayer"))
+        buttonList.add(MainMenuButton(2, width / 2 - 148, defaultHeight + 45, "Alt manager"))
+        buttonList.add(MainMenuButton(3, width / 2 + 32, defaultHeight + 45, "Mods and plugins"))
         buttonList.add(CircleButton(4, width - 80, 8, "Options", ResourceLocation("minusbounce/menu/settings.png")))
-         buttonList.add(CircleButton(5, width - 40, 8, "Quit", ResourceLocation("minusbounce/menu/quit.png")))
+        buttonList.add(CircleButton(5, width - 40, 8, "Quit", ResourceLocation("minusbounce/menu/quit.png")))
         buttonList.add(CircleButton(6, width - 120, 8, "Background", ResourceLocation("minusbounce/menu/wallpaper.png")))
 
 
         var id = 201
-        MinusBounce.mainMenuButton.forEach {
+        PluginGuiManager.mainMenuButton.forEach {
             val width = width / 2 + when (id % 2) {
                 0 -> 32
-                else -> 110
+                else -> -148
             }
             val height = defaultHeight + 45 * 2 + 45 * ((id - 201) / 2)
             buttonList.add(MainMenuButton(id, width, height, it.key))
@@ -52,9 +53,9 @@ class GuiMainMenu : GuiScreen(), GuiYesNoCallback {
 
         val bHeight = (this.height / 3.5).toInt()
 
-        Fonts.font72.drawCenteredString(MinusBounce.CLIENT_NAME, (width / 2).toFloat(), (bHeight + 20).toFloat(), Color.WHITE.rgb, false)
+        Fonts.font72.drawCenteredString(MinusBounce.CLIENT_NAME, (width / 2).toFloat(), (bHeight - 20).toFloat(), Color.WHITE.rgb, false)
         Gui.drawRect(0, 0, 0, 0, Integer.MIN_VALUE)
-        Fonts.font40.drawString("nckfixVersion: ${MinusBounce.CLIENT_VERSION}", 3F, (height - mc.fontRendererObj.FONT_HEIGHT * 2 - 4).toFloat(), 0xffffff, false)
+        Fonts.font40.drawString("Version: ${MinusBounce.CLIENT_VERSION}", 3F, (height - mc.fontRendererObj.FONT_HEIGHT * 2 - 4).toFloat(), 0xffffff, false)
         Fonts.font40.drawString("Made by ${MinusBounce.CLIENT_CREATOR}", 3F, (height - mc.fontRendererObj.FONT_HEIGHT - 2).toFloat(), 0xffffff, false)
         val creditInfo = "Copyright Mojang AB. Do not distribute!"
         Fonts.font40.drawString(creditInfo, width - 2f - Fonts.font40.getStringWidth(creditInfo), (height - mc.fontRendererObj.FONT_HEIGHT - 2).toFloat(), 0xffffff, false)

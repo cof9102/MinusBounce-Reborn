@@ -12,11 +12,12 @@ import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.utils.EntityUtils
-import net.minusmc.minusbounce.utils.RotationUtils
+import net.minusmc.minusbounce.utils.player.RotationUtils
 import net.minusmc.minusbounce.utils.render.RenderUtils
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.FloatValue
 import net.minusmc.minusbounce.value.ListValue
+import net.minusmc.minusbounce.utils.player.MovementCorrection
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityLivingBase
 import net.minecraft.item.ItemBow
@@ -26,6 +27,7 @@ import java.awt.Color
 class BowAimbot : Module() {
 
     private val silentValue = BoolValue("Silent", true)
+    private val movementCorrection = ListValue("MovementCorrection", arrayOf("None", "Normal", "LiquidBounce", "Rise"), "Strict")
     private val predictValue = BoolValue("Predict", true)
     private val throughWallsValue = BoolValue("ThroughWalls", false)
     private val predictSizeValue = FloatValue("PredictSize", 2F, 0.1F, 5F, "m")
@@ -42,31 +44,44 @@ class BowAimbot : Module() {
     fun onUpdate(event: UpdateEvent) {
         target = null
 
-        if (mc.thePlayer.itemInUse?.item is ItemBow) {
-            val entity = getTarget(throughWallsValue.get(), priorityValue.get()) ?: return
+        if (mc.thePlayer.itemInUse?.item !is ItemBow)
+            return
 
-            target = entity
-            RotationUtils.faceBow(target!!, silentValue.get(), predictValue.get(), predictSizeValue.get())
+        val targets = mc.theWorld.loadedEntityList.filter {
+            it is EntityLivingBase && EntityUtils.isSelected(it, true) &&
+                    (throughWallsValue.get() || mc.thePlayer.canEntityBeSeen(it))
+        }.toMutableList()
+
+        val entity = when (priorityValue.get().lowercase()) {
+            "distance" -> targets.minByOrNull { mc.thePlayer.getDistanceToEntity(it) }
+            "direction" -> targets.minByOrNull { RotationUtils.getRotationDifference(it) }
+            "health" -> targets.minByOrNull { (it as EntityLivingBase).health }
+            else -> null
+        }
+
+        target = entity
+
+        if (entity != null) {
+            val rotation = RotationUtils.faceBow(entity, predictValue.get(), predictSizeValue.get())
+
+            if (silentValue.get()) {
+                val movementCorrectionType = when (movementCorrection.get().lowercase()) {
+                    "liquidbounce" -> MovementCorrection.Type.LIQUID_BOUNCE
+                    "rise" -> MovementCorrection.Type.RISE
+                    "normal" -> MovementCorrection.Type.NORMAL
+                    else -> MovementCorrection.Type.NONE
+                }
+
+                RotationUtils.setTargetRotation(rotation, 3, fixType = movementCorrectionType)
+            } else {
+                rotation.toPlayer(mc.thePlayer)
+            }
         }
     }
 
     @EventTarget
     fun onRender3D(event: Render3DEvent) {
-        if (target != null && !priorityValue.get().equals("Multi", ignoreCase = true) && markValue.get())
-            RenderUtils.drawPlatform(target!!, Color(37, 126, 255, 70))
-    }
-
-    private fun getTarget(throughWalls: Boolean, priorityMode: String): Entity? {
-        val targets = mc.theWorld.loadedEntityList.filter {
-            it is EntityLivingBase && EntityUtils.isSelected(it, true) &&
-                    (throughWalls || mc.thePlayer.canEntityBeSeen(it))
-        }
-
-        return when (priorityMode.uppercase()) {
-            "DISTANCE" -> targets.minByOrNull { mc.thePlayer.getDistanceToEntity(it) }
-            "DIRECTION" -> targets.minByOrNull { RotationUtils.getRotationDifference(it) }
-            "HEALTH" -> targets.minByOrNull { (it as EntityLivingBase).health }
-            else -> null
-        }
+        if (markValue.get())
+            RenderUtils.drawPlatform(target ?: return, Color(37, 126, 255, 70))
     }
 }

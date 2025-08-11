@@ -2,8 +2,8 @@ package net.minusmc.minusbounce.features.module.modules.movement.speeds.vulcan
 
 import net.minusmc.minusbounce.features.module.modules.movement.speeds.SpeedMode
 import net.minusmc.minusbounce.features.module.modules.movement.speeds.SpeedType
-import net.minusmc.minusbounce.utils.MovementUtils
-import net.minusmc.minusbounce.utils.RotationUtils
+import net.minusmc.minusbounce.utils.player.MovementUtils
+import net.minusmc.minusbounce.utils.player.RotationUtils
 import net.minecraft.client.settings.GameSettings
 import kotlin.math.abs
 
@@ -17,7 +17,7 @@ class VulcanHopSpeed: SpeedMode("VulcanHop", SpeedType.VULCAN) {
             wasTimer = false
         }
         if ((RotationUtils.targetRotation == null && abs(mc.thePlayer.moveStrafing) < 0.1) || (RotationUtils.targetRotation != null && abs(
-                RotationUtils.getAngleDifference(MovementUtils.movingYaw, RotationUtils.targetRotation!!.yaw)
+                RotationUtils.getAngleDifference(MovementUtils.direction, RotationUtils.targetRotation!!.yaw)
             ) < 45.0f)
         ) {
             mc.thePlayer.jumpMovementFactor = 0.026499f

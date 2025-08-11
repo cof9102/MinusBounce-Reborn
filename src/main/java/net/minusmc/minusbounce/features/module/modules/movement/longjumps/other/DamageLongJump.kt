@@ -1,7 +1,7 @@
 package net.minusmc.minusbounce.features.module.modules.movement.longjumps.other
 
 import net.minusmc.minusbounce.features.module.modules.movement.longjumps.LongJumpMode
-import net.minusmc.minusbounce.utils.MovementUtils
+import net.minusmc.minusbounce.utils.player.MovementUtils
 import net.minusmc.minusbounce.value.FloatValue
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.event.MoveEvent
@@ -19,21 +19,22 @@ class DamageLongJump : LongJumpMode("Damage") {
     	damaged = false
     }
 
-	override fun onUpdateSpecial() {
+	override fun onUpdate() {
 		if (mc.thePlayer.hurtTime > 0 && !damaged) {
             damaged = true
             MovementUtils.strafe(damageBoostValue.get())
             mc.thePlayer.motionY = damageHeightValue.get().toDouble()
         }
+        
         if (damaged) {
             mc.timer.timerSpeed = damageTimerValue.get()
-            if (damageARValue.get() && mc.thePlayer.hurtTime <= 0) damaged = false
+            if (damageARValue.get() && mc.thePlayer.hurtTime <= 0)
+                damaged = false
         }
-
-        return
 	}
 
 	override fun onMove(event: MoveEvent) {
-		if (damageNoMoveValue.get() && !damaged) event.zeroXZ()
+		if (damageNoMoveValue.get() && !damaged)
+            event.zeroXZ()
 	}
 }

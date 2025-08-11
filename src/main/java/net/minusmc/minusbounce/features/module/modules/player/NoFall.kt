@@ -16,7 +16,7 @@ import net.minusmc.minusbounce.features.module.modules.movement.Fly
 import net.minusmc.minusbounce.features.module.modules.player.nofalls.NoFallMode
 import net.minusmc.minusbounce.features.module.modules.render.FreeCam
 import net.minusmc.minusbounce.utils.ClassUtils
-import net.minusmc.minusbounce.utils.MovementUtils
+import net.minusmc.minusbounce.utils.PlayerUtils
 import net.minusmc.minusbounce.utils.block.BlockUtils
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.ListValue
@@ -31,10 +31,10 @@ class NoFall : Module() {
         get() = modes.find{ modeValue.get() == it.modeName } ?: throw NullPointerException()
 
     val modeValue: ListValue = object: ListValue("Mode", modes.map{ it.modeName }.toTypedArray()) {
-        override fun onChange(oldValue: String, newValue: String) {
+        override fun onPreChange(oldValue: String, newValue: String) {
             if (state) onDisable()
         }
-        override fun onChanged(oldValue: String, newValue: String) {
+        override fun onPostChange(oldValue: String, newValue: String) {
             if (state) onEnable()
         }
     }
@@ -58,37 +58,62 @@ class NoFall : Module() {
 
     @EventTarget(ignoreCondition = true)
     fun onUpdate(event: UpdateEvent) {
-        if (!state || MinusBounce.moduleManager[FreeCam::class.java]!!.state || mc.thePlayer.isSpectator || mc.thePlayer.capabilities.allowFlying || mc.thePlayer.capabilities.disableDamage)
+        if (!state || freeCamModule.state || mc.thePlayer.isSpectator || mc.thePlayer.capabilities.allowFlying || mc.thePlayer.capabilities.disableDamage)
             return
 
-        if (!MinusBounce.moduleManager[Fly::class.java]!!.state && voidCheckValue.get() && !MovementUtils.isBlockUnder) return
+        if (!flyModule.state && voidCheckValue.get() && !PlayerUtils.isBlockUnder)
+            return
 
-        if (BlockUtils.collideBlock(mc.thePlayer.entityBoundingBox) { it is BlockLiquid } || BlockUtils.collideBlock(AxisAlignedBB(mc.thePlayer.entityBoundingBox.maxX, mc.thePlayer.entityBoundingBox.maxY, mc.thePlayer.entityBoundingBox.maxZ, mc.thePlayer.entityBoundingBox.minX, mc.thePlayer.entityBoundingBox.minY - 0.01, mc.thePlayer.entityBoundingBox.minZ)) { it is BlockLiquid })
+        val firstBoundingBox = mc.thePlayer.entityBoundingBox
+        val secondBoundingBox = AxisAlignedBB(firstBoundingBox.maxX, firstBoundingBox.maxY, firstBoundingBox.maxZ, firstBoundingBox.minX, firstBoundingBox.minY - 0.01, firstBoundingBox.minZ)
+
+        if (BlockUtils.collideBlock(firstBoundingBox) { it is BlockLiquid } || BlockUtils.collideBlock(secondBoundingBox) {it is BlockLiquid})
             return
 
         mode.onUpdate()
     }
 
     @EventTarget
-    fun onMotion(event: MotionEvent) {
-        if (!MinusBounce.moduleManager[Fly::class.java]!!.state && voidCheckValue.get() && !MovementUtils.isBlockUnder) return
+    fun onPreMotion(event: PreMotionEvent) {
+        if (!flyModule.state && voidCheckValue.get() && !PlayerUtils.isBlockUnder)
+            return
 
-        mode.onMotion(event)
+        mode.onPreMotion(event)
     }
 
     @EventTarget
-    fun onPacket(event: PacketEvent) {
-        mc.thePlayer ?: return
-        if (!MinusBounce.moduleManager[Fly::class.java]!!.state && voidCheckValue.get() && !MovementUtils.isBlockUnder) return
+    fun onPostMotion(event: PostMotionEvent) {
+        if (!flyModule.state && voidCheckValue.get() && !PlayerUtils.isBlockUnder)
+            return
 
-        mode.onPacket(event)
+        mode.onPostMotion(event)
+    }
+
+    @EventTarget
+    fun onSentPacket(event: SentPacketEvent) {
+        if (!flyModule.state && voidCheckValue.get() && !PlayerUtils.isBlockUnder)
+            return
+
+        mode.onSentPacket(event)
+    }
+
+    @EventTarget
+    fun onReceivedPacket(event: ReceivedPacketEvent) {
+        if (!flyModule.state && voidCheckValue.get() && !PlayerUtils.isBlockUnder)
+            return
+
+        mode.onReceivedPacket(event)
     }
 
     @EventTarget
     fun onMove(event: MoveEvent) {
-        if (!MinusBounce.moduleManager[Fly::class.java]!!.state && voidCheckValue.get() && !MovementUtils.isBlockUnder) return
+        if (!flyModule.state && voidCheckValue.get() && !PlayerUtils.isBlockUnder)
+            return
 
-        if (BlockUtils.collideBlock(mc.thePlayer.entityBoundingBox) { it is BlockLiquid } || BlockUtils.collideBlock(AxisAlignedBB(mc.thePlayer.entityBoundingBox.maxX, mc.thePlayer.entityBoundingBox.maxY, mc.thePlayer.entityBoundingBox.maxZ, mc.thePlayer.entityBoundingBox.minX, mc.thePlayer.entityBoundingBox.minY - 0.01, mc.thePlayer.entityBoundingBox.minZ)) { it is BlockLiquid })
+        val firstBoundingBox = mc.thePlayer.entityBoundingBox
+        val secondBoundingBox = AxisAlignedBB(firstBoundingBox.maxX, firstBoundingBox.maxY, firstBoundingBox.maxZ, firstBoundingBox.minX, firstBoundingBox.minY - 0.01, firstBoundingBox.minZ)
+
+        if (BlockUtils.collideBlock(firstBoundingBox) { it is BlockLiquid } || BlockUtils.collideBlock(secondBoundingBox) {it is BlockLiquid})
             return
 
         mode.onMove(event)
@@ -98,6 +123,17 @@ class NoFall : Module() {
     fun onJump(event: JumpEvent) {
         mode.onJump()
     }
+
+    @EventTarget(ignoreCondition = true)
+    fun onRender2D(event: Render2DEvent) {
+        mode.onRender2D()
+    }
+
+    private val flyModule: Fly
+        get() = MinusBounce.moduleManager[Fly::class.java]!!
+
+    private val freeCamModule: FreeCam
+        get() = MinusBounce.moduleManager[FreeCam::class.java]!!
 
     override val tag: String
         get() = modeValue.get()

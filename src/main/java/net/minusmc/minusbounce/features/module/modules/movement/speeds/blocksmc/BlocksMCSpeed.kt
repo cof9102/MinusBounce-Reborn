@@ -4,9 +4,8 @@ import net.minusmc.minusbounce.MinusBounce
 import net.minusmc.minusbounce.features.module.modules.movement.speeds.SpeedMode
 import net.minusmc.minusbounce.features.module.modules.movement.speeds.SpeedType
 import net.minusmc.minusbounce.value.BoolValue
-import net.minusmc.minusbounce.utils.MovementUtils
+import net.minusmc.minusbounce.utils.player.MovementUtils
 import net.minecraft.potion.Potion
-import net.minusmc.minusbounce.features.module.modules.combat.KillAura
 
 class BlocksMCSpeed: SpeedMode("BlocksMC", SpeedType.BLOCKSMC) {
 
@@ -26,7 +25,7 @@ class BlocksMCSpeed: SpeedMode("BlocksMC", SpeedType.BLOCKSMC) {
             }
         }
 
-        if (damageBoostValue.get() && mc.thePlayer.hurtTime > 0 && MinusBounce.moduleManager[KillAura::class.java]!!.target != null) {
+        if (damageBoostValue.get() && mc.thePlayer.hurtTime > 0 && MinusBounce.combatManager.target != null) {
             MovementUtils.strafe(0.45995554f)
         }
 

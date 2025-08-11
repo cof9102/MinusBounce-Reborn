@@ -1,7 +1,7 @@
 package net.minusmc.minusbounce.utils.extensions
 
 import net.minusmc.minusbounce.utils.Rotation
-import net.minusmc.minusbounce.utils.RotationUtils
+import net.minusmc.minusbounce.utils.player.RotationUtils
 import net.minecraft.block.state.IBlockState
 import net.minecraft.client.Minecraft
 import net.minecraft.client.entity.EntityPlayerSP
@@ -15,9 +15,11 @@ fun Vec3.multiply(value: Double): Vec3 {
     return Vec3(this.xCoord * value, this.yCoord * value, this.zCoord * value)
 }
 
+fun AxisAlignedBB.clone() = AxisAlignedBB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)
+
 fun AxisAlignedBB.getLookingTargetRange(thePlayer: EntityPlayerSP, rotation: Rotation? = null, range: Double=6.0): Double {
     val eyes = thePlayer.getPositionEyes(1F)
-    val movingObj = this.calculateIntercept(eyes, (rotation ?: RotationUtils.targetRotation)!!.toDirection().multiply(range).add(eyes)) ?: return Double.MAX_VALUE
+    val movingObj = this.calculateIntercept(eyes, (rotation ?: RotationUtils.currentRotation)!!.toDirection().multiply(range).add(eyes)) ?: return Double.MAX_VALUE
     return movingObj.hitVec.distanceTo(eyes)
 }
 

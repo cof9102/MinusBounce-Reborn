@@ -5,7 +5,6 @@ plugins {
     id "com.github.johnrengelman.shadow" version "6.1.0"
     id "net.minecraftforge.gradle.forge"
     id "org.spongepowered.mixin"
-    id "maven-publish"
 }
 
 repositories {
@@ -34,15 +33,12 @@ minecraft {
     runDir = "run"
     mappings = "stable_22"
     makeObfSourceJar = false
-    clientJvmArgs += ["-Dfml.coreMods.load=net.minusmc.minusbounce.injection.forge.TransformerLoader", "-Xmx4096m", "-Xms1024m", "-Ddev-mode"]
+    clientJvmArgs += ["-Dfml.coreMods.load=net.minusmc.minusbounce.injection.forge.TransformerLoader", "-Ddev-mode"]
 }
 
 configurations {
     include
     implementation.extendsFrom(include)
-    runtimeOnly {
-        canBeResolved = true
-    }
 }
 
 dependencies {
@@ -105,14 +101,14 @@ classes.dependsOn(moveResources)
 
 jar {
     manifest.attributes(
-            "FMLCorePlugin": "net.minusmc.minusbounce.injection.forge.TransformerLoader",
-            "FMLCorePluginContainsFMLMod": true,
-            "ForceLoadAsMod": true,
-            "MixinConfigs": "minusbounce.forge.mixins.json",
-            "ModSide": "CLIENT",
-            "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
-            "TweakOrder": "0",
-            "FMLAT": "minusbounce_at.cfg",
+        "FMLCorePlugin": "net.minusmc.minusbounce.injection.forge.TransformerLoader",
+        "FMLCorePluginContainsFMLMod": true,
+        "ForceLoadAsMod": true,
+        "MixinConfigs": "minusbounce.forge.mixins.json",
+        "ModSide": "CLIENT",
+        "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
+        "TweakOrder": "0",
+        "FMLAT": "minusbounce_at.cfg",
     )
 
     enabled = true
@@ -138,29 +134,3 @@ configurations {
 tasks.reobfShadowJar.mustRunAfter shadowJar
 
 tasks.reobfJar.dependsOn(shadowJar)
-
-publishing {
-    repositories {
-        maven {
-            name = "MinusMCRepo"
-            url = "https://repo.minusbounce.lol/snapshots"
-            credentials {
-                username = System.getenv("REPO_USERNAME")
-                password = System.getenv("REPO_TOKEN")
-            }
-        }
-    }
-
-    publications {
-        maven(MavenPublication) {
-            groupId = project.group
-            artifactId = project.name
-            version = project.version
-
-            from components.java
-        }
-    }
-}
-tasks.named("runClient").configure {
-    classpath += sourceSets.main.runtimeClasspath
-}

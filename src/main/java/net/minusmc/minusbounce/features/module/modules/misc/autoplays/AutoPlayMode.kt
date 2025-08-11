@@ -19,18 +19,19 @@ abstract class AutoPlayMode(val modeName: String): MinecraftInstance() {
 
     open fun onEnable() {}
 	open fun onWorld() {}
-	open fun onPacket(event: PacketEvent) {}
+	open fun onReceivedPacket(event: ReceivedPacketEvent) {}
 
 	protected fun queueAutoPlay(delay: Long = autoplay.delayValue.get().toLong() * 1000, runnable: () -> Unit) {
-        if (queued) return
+        if (queued) 
+            return
         queued = true
         AutoDisable.handleGameEnd()
         if (autoplay.state) {
             Timer().schedule(delay) {
                 queued = false
-                if (autoplay.state) runnable()
+                runnable.invoke()
             }
-            MinusBounce.hud.addNotification(Notification("Sending you to a new game in ${delay}s!", Notification.Type.INFO, delay.toLong() * 1000L))
+            MinusBounce.hud.addNotification(Notification("AutoPlay", "Sending you to a new game in ${delay}s!", Notification.Type.INFO, delay))
         }
     }
 

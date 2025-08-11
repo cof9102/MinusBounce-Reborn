@@ -7,7 +7,9 @@ package net.minusmc.minusbounce.features.module.modules.movement
 
 import net.minusmc.minusbounce.event.EventTarget
 import net.minusmc.minusbounce.event.UpdateEvent
+import net.minusmc.minusbounce.event.MoveInputEvent
 import net.minusmc.minusbounce.event.JumpEvent
+import net.minusmc.minusbounce.event.TickEvent
 import net.minusmc.minusbounce.features.module.modules.movement.nowebs.NoWebMode
 import net.minusmc.minusbounce.utils.ClassUtils
 import net.minusmc.minusbounce.features.module.Module
@@ -26,10 +28,10 @@ class NoWeb : Module() {
         get() = modes.find { modeValue.get().equals(it.modeName, true) } ?: throw NullPointerException()
 
     private val modeValue: ListValue = object: ListValue("Mode", modes.map{ it.modeName }.toTypedArray(), "Vanilla") {
-        override fun onChange(oldValue: String, newValue: String) {
+        override fun onPreChange(oldValue: String, newValue: String) {
             if (state) onDisable()
         }
-        override fun onChanged(oldValue: String, newValue: String) {
+        override fun onPostChange(oldValue: String, newValue: String) {
             if (state) onEnable()
         }
     }
@@ -40,18 +42,24 @@ class NoWeb : Module() {
 
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
-        if (!mc.thePlayer.isInWeb) return
         mode.onUpdate()
     }
 
-    fun onJump(event: JumpEvent){
+    fun onJump(event: JumpEvent) {
         mode.onJump(event)
+    }
+
+    fun onTick(event: TickEvent) {
+        mode.onTick()
+    }
+
+    fun onMoveInput(event: MoveInputEvent) {
+        mode.onMoveInput(event)
     }
 
     override fun onDisable() {
         mc.timer.timerSpeed = 1.0F
     }
-
 
     override val tag: String
         get() = modeValue.get()

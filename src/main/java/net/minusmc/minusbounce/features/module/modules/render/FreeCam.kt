@@ -10,14 +10,11 @@ import net.minecraft.network.play.client.C03PacketPlayer
 import net.minecraft.network.play.client.C03PacketPlayer.*
 import net.minecraft.network.play.client.C0BPacketEntityAction
 import net.minecraft.network.play.server.S08PacketPlayerPosLook
-import net.minusmc.minusbounce.event.EventTarget
-import net.minusmc.minusbounce.event.PacketEvent
-import net.minusmc.minusbounce.event.UpdateEvent
-import net.minusmc.minusbounce.event.WorldEvent
+import net.minusmc.minusbounce.event.*
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
-import net.minusmc.minusbounce.utils.MovementUtils
+import net.minusmc.minusbounce.utils.player.MovementUtils
 import net.minusmc.minusbounce.utils.PosLookInstance
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.FloatValue
@@ -28,7 +25,7 @@ class FreeCam : Module() {
     private val speedValue = FloatValue("Speed", 0.8F, 0.1F, 2F, "m")
     private val flyValue = BoolValue("Fly", true)
     private val noClipValue = BoolValue("NoClip", true)
-    val undetectableValue = BoolValue("Undetectable", true)
+    private val undetectableValue = BoolValue("Undetectable", true)
 
     private var fakePlayer: EntityOtherPlayerMP? = null
     private var oldX = 0.0
@@ -76,6 +73,7 @@ class FreeCam : Module() {
     fun onUpdate(event: UpdateEvent) {
         if (noClipValue.get())
             mc.thePlayer.noClip = true
+            
         mc.thePlayer.fallDistance = 0F
 
         if (flyValue.get()) {
@@ -91,13 +89,13 @@ class FreeCam : Module() {
     }
 
     @EventTarget
-    fun onPacket(event: PacketEvent) {
+    fun onSentPacket(event: SentPacketEvent) {
         fakePlayer ?: return
 
         val packet = event.packet
         if (undetectableValue.get()) {
             if (packet is C04PacketPlayerPosition || packet is C05PacketPlayerLook) {
-                event.cancelEvent()
+                event.isCancelled = true
                 mc.netHandler.addToSendQueue(C03PacketPlayer(lastOnGround))
             } else if (packet is C06PacketPlayerPosLook) {
                 if (posLook.equalFlag(packet)) {
@@ -116,16 +114,26 @@ class FreeCam : Module() {
                     packet.yaw = fakePlayer!!.rotationYaw
                     packet.pitch = fakePlayer!!.rotationPitch
                 } else {
-                    event.cancelEvent()
+                    event.isCancelled = true
                     mc.netHandler.addToSendQueue(C03PacketPlayer(lastOnGround))
                 }
             }
-        } else if (packet is C03PacketPlayer)
-            event.cancelEvent()
+        }
+        if (packet is C03PacketPlayer)
+            event.isCancelled = true
+
         if (packet is C0BPacketEntityAction)
-            event.cancelEvent()
+            event.isCancelled = true
+    }
+
+    @EventTarget
+    fun onReceivedPacket(event: ReceivedPacketEvent) {
+        fakePlayer ?: return
+
+        val packet = event.packet
+
         if (packet is S08PacketPlayerPosLook) {
-            event.cancelEvent()
+            event.isCancelled = true
             posLook.set(packet)
         }
     }

@@ -8,11 +8,12 @@
     "accessors.MinecraftForgeClientAccessor",
     "block.MixinBlock",
     "block.MixinBlockAnvil",
+    "block.MixinBlockGlass",
     "block.MixinBlockLiquid",
-    "block.MixinBlockRedstoneTorch",
     "block.MixinBlockSoulSand",
     "client.MixinGameSettings",
     "client.MixinMinecraft",
+    "client.MixinMovementInput",
     "client.MixinMovementInputFromOptions",
     "client.MixinResourcePackRepository",
     "entity.MixinAbstractClientPlayer",
@@ -51,7 +52,6 @@
     "item.MixinItemStack",
     "item.MixinNBTTagCompound",
     "network.MixinNetHandlerPlayClient",
-    "network.MixinNetworkManagerChInit",
     "network.MixinNetworkManager",
     "network.MixinNetworkPlayerInfo",
     "packets.MixinC00Handshake",
@@ -88,10 +88,10 @@
     "render.MixinModelSkeleton",
     "render.MixinModelVillager",
     "render.MixinRender",
-    "render.MixinRenderItem",
-    "render.MixinRenderPlayer",
     "render.MixinRenderEntityItem",
     "render.MixinRendererLivingEntity",
+    "render.MixinRenderItem",
+    "render.MixinRenderPlayer",
     "render.MixinTileEntityBannerRenderer",
     "render.MixinTileEntityChestRenderer",
     "render.MixinTileEntityItemStackRenderer",
@@ -103,5 +103,8 @@
     "resources.MixinSkinManager",
     "world.MixinWorld",
     "world.MixinWorldClient"
+  ],
+  "client": [
+    "entity.MixinEntityOtherPlayerMP"
   ]
 }

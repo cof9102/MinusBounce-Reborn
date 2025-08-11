@@ -1,59 +1,72 @@
 package net.minusmc.minusbounce.features.module.modules.combat.velocitys.intave
 
-import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
-import net.minusmc.minusbounce.event.PacketEvent
-import net.minusmc.minusbounce.event.StrafeEvent
-import net.minusmc.minusbounce.value.IntegerValue
 import net.minecraft.network.play.server.S12PacketEntityVelocity
-import net.minecraft.network.play.server.S27PacketExplosion
+import net.minusmc.minusbounce.event.AttackEvent
+import net.minusmc.minusbounce.event.KnockbackEvent
+import net.minusmc.minusbounce.event.MoveInputEvent
+import net.minusmc.minusbounce.event.EntityDamageEvent
+import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
+import net.minusmc.minusbounce.utils.RaycastUtils
+import net.minusmc.minusbounce.value.FloatValue
+import net.minusmc.minusbounce.value.BoolValue
+import net.minecraft.util.MovingObjectPosition
+
 
 class IntaveVelocity : VelocityMode("Intave") {
-    private val intaveJumpResetCount = IntegerValue("JumpResetCount", 2, 1, 10)
-    private var intaveJumpCount = 0
-    private var hasReceivedVelocity = false
-    private var intaveLastAttackTime = 0L
-    private val intaveLastAttackTimeToReduce = 4000L
-    private val intaveReduceFactor = 0.6
-    private val intaveHurtTime = 1..3
+    private val targetRange = FloatValue("TargetRange", 3f, 0f, 5f)
+    private val hurtTime = BoolValue("KeepSprintOnlyHurtTime", false)
+    private var blockVelocity = false
+    private var isRaytracedToEntity = false
 
-    override fun onPacket(event: PacketEvent) {
-        val packet = event.packet
-        val thePlayer = mc.thePlayer ?: return
+    override fun onEnable() {
+        isRaytracedToEntity = false
+    }
 
-        if (packet is S12PacketEntityVelocity && packet.entityID == thePlayer.entityId) {
-            val velocityX = packet.motionX / 8000.0
-            val velocityY = packet.motionY / 8000.0
-            val velocityZ = packet.motionZ / 8000.0
-            
-            if (thePlayer.hurtTime in intaveHurtTime && 
-                System.currentTimeMillis() - intaveLastAttackTime <= intaveLastAttackTimeToReduce) {
-                packet.motionX = (packet.motionX * intaveReduceFactor).toInt()
-                packet.motionZ = (packet.motionZ * intaveReduceFactor).toInt()
-                intaveLastAttackTime = System.currentTimeMillis()
-            }
-            hasReceivedVelocity = true
-        } else if (packet is S27PacketExplosion) {
-            event.cancelEvent()
+    override fun onDisable() {
+        mc.thePlayer.movementInput.jump = false
+    }
+
+    override fun onUpdate() {
+        blockVelocity = true
+        isRaytracedToEntity = false
+
+        RaycastUtils.runWithModifiedRaycastResult(targetRange.get(), 0f) {
+            isRaytracedToEntity = it.typeOfHit == MovingObjectPosition.MovingObjectType.ENTITY || 
+                mc.objectMouseOver?.typeOfHit == MovingObjectPosition.MovingObjectType.ENTITY
+        }
+
+        if (isRaytracedToEntity && mc.thePlayer.hurtTime == 9 && !mc.thePlayer.isBurning)
+            mc.thePlayer.movementInput.jump = true
+    }
+
+    override fun onEntityDamage(event: EntityDamageEvent) {
+        if (isRaytracedToEntity && mc.thePlayer.hurtTime == 9 && !mc.thePlayer.isBurning)
+            mc.thePlayer.movementInput.jump = true
+    }
+
+    override fun onAttack(event: AttackEvent) {
+        if (mc.thePlayer.hurtTime > 0 && blockVelocity) {
+            mc.thePlayer.isSprinting = false
+            mc.thePlayer.motionX *= 0.6
+            mc.thePlayer.motionZ *= 0.6
+            blockVelocity = false
         }
     }
 
-    override fun onStrafe(event: StrafeEvent) {
-        val player = mc.thePlayer ?: return
-        
-        if (hasReceivedVelocity) {
-            if (player.hurtTime == 9) {
-                intaveJumpCount++
-                if (intaveJumpCount % intaveJumpResetCount.get() == 0 && 
-                    player.onGround && 
-                    player.isSprinting && 
-                    mc.currentScreen == null) {
-                    player.jump()
-                    intaveJumpCount = 0
-                }
-            } else {
-                hasReceivedVelocity = false
-                intaveJumpCount = 0
-            }
+    override fun onMoveInput(event: MoveInputEvent) {
+        if (mc.thePlayer.hurtTime > 0 && isRaytracedToEntity) {
+            event.forward = 1.0F
+            event.strafe = 0.0F
         }
+    }
+
+    override fun onKnockback(event: KnockbackEvent) {
+        if (mc.thePlayer.hurtTime <= 0)
+            event.isCancelled = true
+
+        if (hurtTime.get() && mc.thePlayer.hurtTime == 0)
+            event.isCancelled = false
+
+        event.reduceY = true
     }
 }

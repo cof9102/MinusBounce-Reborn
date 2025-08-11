@@ -9,13 +9,13 @@ import net.minecraft.client.gui.GuiChat
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.entity.player.EntityPlayer
 import net.minusmc.minusbounce.MinusBounce
+import net.minusmc.minusbounce.features.module.modules.render.ClientTheme
 import net.minusmc.minusbounce.ui.client.hud.designer.GuiHudDesigner
 import net.minusmc.minusbounce.ui.client.hud.element.Border
 import net.minusmc.minusbounce.ui.client.hud.element.Element
 import net.minusmc.minusbounce.ui.client.hud.element.ElementInfo
 import net.minusmc.minusbounce.ui.client.hud.element.elements.targets.TargetStyle
 import net.minusmc.minusbounce.ui.client.hud.element.elements.targets.impl.Chill
-import net.minusmc.minusbounce.ui.client.hud.element.elements.targets.impl.Rice
 import net.minusmc.minusbounce.utils.ClassUtils
 import net.minusmc.minusbounce.utils.extensions.getDistanceToEntityBox
 import net.minusmc.minusbounce.utils.render.*
@@ -40,7 +40,6 @@ class Target : Element() {
 
     val styleValue = ListValue("Style", styles.map { it.name }.toTypedArray(), "LiquidBounce")
 
-    // Global variables
     private val blurValue = BoolValue("Blur", false)
     private val blurStrength = FloatValue("Blur-Strength", 1F, 0.01F, 40F) { blurValue.get() }
 
@@ -67,10 +66,11 @@ class Target : Element() {
     private val showWithChatOpen = BoolValue("Show-ChatOpen", true)
     private val resetBar = BoolValue("ResetBarWhenHiding", false)
 
-    val colorModeValue = ListValue("Color", arrayOf("Custom", "Rainbow", "Sky", "Slowly", "Fade", "Health"), "Custom")
+    val colorModeValue = ListValue("Color", arrayOf("Custom", "Theme", "Rainbow", "Sky", "Slowly", "Fade", "Health"), "Custom")
     val redValue = IntegerValue("Red", 252, 0, 255)
     val greenValue = IntegerValue("Green", 96, 0, 255)
     val blueValue = IntegerValue("Blue", 66, 0, 255)
+    val colorAlphaValue = IntegerValue("Alpha", 255, 0, 255)
     val saturationValue = FloatValue("Saturation", 1F, 0F, 1F)
     val brightnessValue = FloatValue("Brightness", 1F, 0F, 1F)
     val waveSecondValue = IntegerValue("Seconds", 2, 1, 10)
@@ -85,22 +85,17 @@ class Target : Element() {
     var barColor = Color(-1)
     var bgColor = Color(-1)
 
-//    init {
-//        styles.map {
-//            style.values.forEach {it.name = "${style.name}-${it.name}"}
-//        }
-//    }
-
     override fun drawElement(): Border? {
         val mainStyle = style
 
         val kaTarget = MinusBounce.combatManager.target
 
-        val actualTarget = if (kaTarget != null && kaTarget is EntityPlayer && mc.thePlayer.getDistanceToEntityBox(kaTarget) <= 8.0) kaTarget 
-                            else if ((mc.currentScreen is GuiChat && showWithChatOpen.get()) || mc.currentScreen is GuiHudDesigner) mc.thePlayer 
-                            else null
+        val actualTarget = if (kaTarget != null && kaTarget is EntityPlayer && mc.thePlayer.getDistanceToEntityBox(kaTarget) <= 8.0) kaTarget
+        else if ((mc.currentScreen is GuiChat && showWithChatOpen.get()) || mc.currentScreen is GuiHudDesigner) mc.thePlayer
+        else null
 
         val preBarColor = when (colorModeValue.get()) {
+            "Theme" -> ClientTheme.getColorWithAlpha(0, colorAlphaValue.get())
             "Rainbow" -> Color(RenderUtils.getRainbowOpaque(waveSecondValue.get(), saturationValue.get(), brightnessValue.get(), 0))
             "Custom" -> Color(redValue.get(), greenValue.get(), blueValue.get())
             "Sky" -> RenderUtils.skyRainbow(0, saturationValue.get(), brightnessValue.get())
@@ -130,14 +125,12 @@ class Target : Element() {
         val borderHeight = returnBorder.y2 - returnBorder.y
 
         if (mainTarget == null) {
-            if (resetBar.get()) 
+            if (resetBar.get())
                 mainStyle.easingHealth = 0F
-            if (mainStyle is Rice)
-                mainStyle.particleList.clear()
             return returnBorder
         }
         val convertTarget = mainTarget!!
-        
+
         val calcScaleX = animProgress * (4F / (borderWidth / 2F))
         val calcScaleY = animProgress * (4F / (borderHeight / 2F))
         val calcTranslateX = borderWidth / 2F * calcScaleX
@@ -196,7 +189,7 @@ class Target : Element() {
             GL11.glTranslatef(calcTranslateX, calcTranslateY, 0F)
             GL11.glScalef(1F - calcScaleX, 1F - calcScaleY, 1F - calcScaleX)
         }
-        
+
         if (mainStyle is Chill)
             mainStyle.updateData(renderX.toFloat() + calcTranslateX, renderY.toFloat() + calcTranslateY, calcScaleX, calcScaleY)
         mainStyle.drawTarget(convertTarget)
@@ -217,11 +210,10 @@ class Target : Element() {
 
     override val values = super.values.toMutableList().also {
         styles.map {
-            style -> style.values.forEach { value ->
-                val displayableFunction = value.displayableFunction
-                it.add(value.displayable { displayableFunction.invoke() && styleValue.get() == style.name })
-            }
+                style -> style.values.forEach { value ->
+            val displayableFunction = value.displayableFunction
+            it.add(value.displayable { displayableFunction.invoke() && styleValue.get() == style.name })
+        }
         }
     }
-
 }

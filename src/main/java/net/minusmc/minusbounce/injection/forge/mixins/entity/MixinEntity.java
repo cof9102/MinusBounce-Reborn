@@ -5,23 +5,18 @@
  */
 package net.minusmc.minusbounce.injection.forge.mixins.entity;
 
-import net.minusmc.minusbounce.MinusBounce;
-import net.minusmc.minusbounce.event.StrafeEvent;
-import net.minusmc.minusbounce.features.module.modules.combat.HitBox;
-import net.minusmc.minusbounce.features.module.modules.misc.Patcher;
-import net.minusmc.minusbounce.utils.RotationUtils;
 import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.BlockPos;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.Vec3;
+import net.minecraft.util.*;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityDispatcher;
+import net.minusmc.minusbounce.MinusBounce;
+import net.minusmc.minusbounce.event.LookEvent;
+import net.minusmc.minusbounce.event.StrafeEvent;
+import net.minusmc.minusbounce.features.module.modules.combat.HitBox;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -114,6 +109,9 @@ public abstract class MixinEntity {
     public float distanceWalkedOnStepModified;
 
     @Shadow
+    public float fallDistance;
+
+    @Shadow
     public abstract boolean isInWater();
 
     @Shadow
@@ -162,13 +160,7 @@ public abstract class MixinEntity {
     private int fire;
 
     @Shadow
-    public float prevRotationPitch;
-
-    @Shadow
-    public float prevRotationYaw;
-
-    @Shadow
-    protected abstract Vec3 getVectorForRotation(float pitch, float yaw);
+    public abstract Vec3 getVectorForRotation(float pitch, float yaw);
 
     @Shadow
     public abstract UUID getUniqueID();
@@ -176,10 +168,8 @@ public abstract class MixinEntity {
     @Shadow
     public abstract boolean isSneaking();
 
-    @Shadow
-    public abstract boolean isInsideOfMaterial(Material materialIn);
-
-    @Shadow(remap = false) private CapabilityDispatcher capabilities;
+    @Shadow(remap = false)
+    private CapabilityDispatcher capabilities;
 
     public int getNextStepDistance() {
         return nextStepDistance;
@@ -201,16 +191,60 @@ public abstract class MixinEntity {
             callbackInfoReturnable.setReturnValue(0.1F + hitBox.getSizeValue().get());
     }
 
-    @Inject(method = "moveFlying", at = @At("HEAD"), cancellable = true)
-    private void handleRotations(float strafe, float forward, float friction, final CallbackInfo callbackInfo) {
-        if ((Entity) (Object) this != Minecraft.getMinecraft().thePlayer)
+    /**
+     * interpolated look vector
+     *
+     * @author fmcpe
+     * @reason MouseObject
+     */
+    @Overwrite
+    public Vec3 getLook(float partialTicks)
+    {
+        final LookEvent event = new LookEvent(this.rotationYaw, this.rotationPitch);
+        MinusBounce.eventManager.callEvent(event);
+
+        return this.getVectorForRotation(event.getPitch(), event.getYaw());
+    }
+
+    /**
+     * @author fmcpe
+     * @reason Strafe event
+     */
+    @Overwrite
+    public void moveFlying(float strafe, float forward, float friction){
+        if ((Object) this != Minecraft.getMinecraft().thePlayer)
             return;
         
-        final StrafeEvent strafeEvent = new StrafeEvent(strafe, forward, friction, this.rotationYaw);
-        MinusBounce.eventManager.callEvent(strafeEvent);
+        final StrafeEvent event = new StrafeEvent(strafe, forward, friction, this.rotationYaw);
+        MinusBounce.eventManager.callEvent(event);
 
-        if (strafeEvent.isCancelled())
-            callbackInfo.cancel();
+        if (event.isCancelled())
+            return;
+
+        strafe = event.getStrafe();
+        forward = event.getForward();
+        friction = event.getFriction();
+        float yaw = event.getYaw();
+
+        float f = strafe * strafe + forward * forward;
+
+        if (f >= 1.0E-4F)
+        {
+            f = MathHelper.sqrt_float(f);
+
+            if (f < 1.0F)
+            {
+                f = 1.0F;
+            }
+
+            f = friction / f;
+            strafe *= f;
+            forward *= f;
+            float f1 = MathHelper.sin(yaw * 3.1415927f / 180.0F);
+            float f2 = MathHelper.cos(yaw * 3.1415927f / 180.0F);
+            this.motionX += strafe * f2 - forward * f1;
+            this.motionZ += forward * f2 + strafe * f1;
+        }
     }
 
     @Redirect(method = "getBrightnessForRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;isBlockLoaded(Lnet/minecraft/util/BlockPos;)Z"))

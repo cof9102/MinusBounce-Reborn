@@ -7,7 +7,7 @@ package net.minusmc.minusbounce.features.module.modules.misc
 
 import net.minusmc.minusbounce.MinusBounce
 import net.minusmc.minusbounce.event.EventTarget
-import net.minusmc.minusbounce.event.PacketEvent
+import net.minusmc.minusbounce.event.ReceivedPacketEvent
 import net.minusmc.minusbounce.event.WorldEvent
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
@@ -28,11 +28,11 @@ class AutoPlay : Module() {
         get() = modes.find { modeValue.get().equals(it.modeName, true) } ?: throw NullPointerException()
 
     private val modeValue: ListValue = object : ListValue("Mode", modes.map { it.modeName }.toTypedArray(), "Redesky") {
-        override fun onChange(oldValue: String, newValue: String) {
+        override fun onPreChange(oldValue: String, newValue: String) {
             if (state) onDisable()
         }
 
-        override fun onChanged(oldValue: String, newValue: String) {
+        override fun onPostChange(oldValue: String, newValue: String) {
             if (state) onEnable()
         }
     }
@@ -44,8 +44,8 @@ class AutoPlay : Module() {
     }
 
     @EventTarget
-    fun onPacket(event: PacketEvent) {
-        mode.onPacket(event)
+    fun onReceivedPacket(event: ReceivedPacketEvent) {
+        mode.onReceivedPacket(event)
     }
 
     @EventTarget

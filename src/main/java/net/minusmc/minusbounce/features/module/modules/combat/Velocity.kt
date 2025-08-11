@@ -13,6 +13,7 @@ import net.minusmc.minusbounce.value.FloatValue
 import net.minusmc.minusbounce.value.ListValue
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.utils.ClassUtils
+import net.minusmc.minusbounce.utils.misc.RandomUtils
 import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
 import net.minecraft.network.play.server.S27PacketExplosion
 import net.minusmc.minusbounce.value.IntegerValue
@@ -29,11 +30,11 @@ class Velocity : Module() {
             ?: throw NullPointerException() // this should not happen
 
     private val modeValue: ListValue = object : ListValue("Mode", modes.map { it.modeName }.toTypedArray(), "Cancel") {
-        override fun onChange(oldValue: String, newValue: String) {
+        override fun onPreChange(oldValue: String, newValue: String) {
             if (state) onDisable()
         }
 
-        override fun onChanged(oldValue: String, newValue: String) {
+        override fun onPostChange(oldValue: String, newValue: String) {
             if (state) onEnable()
         }
     }
@@ -42,8 +43,8 @@ class Velocity : Module() {
     private val horizontalExplosionValue = FloatValue("HorizontalExplosion", 0F, 0F, 1F) { onExplosionValue.get() }
     private val verticalExplosionValue = FloatValue("VerticalExplosion", 0F, 0F, 1F) { onExplosionValue.get() }
 
-    private val reduceChance = FloatValue("Reduce-Chance", 100F, 0F, 100F, "%")
-    private var shouldAffect: Boolean = true
+    private val reduceChance = FloatValue("Reduce-Chance", 100f, 0f, 100f, "%")
+    private var shouldAffect = true
 
     override fun onInitialize() {
         modes.map { mode -> mode.values.forEach { value -> value.name = "${mode.modeName}-${value.name}" } }
@@ -54,58 +55,83 @@ class Velocity : Module() {
     }
 
     @EventTarget
-    fun onPacket(event: PacketEvent) {
-        mode.onPacket(event)
+    fun onEntityDamage(event: EntityDamageEvent) {
+        mode.onEntityDamage(event)
+    }
+
+    @EventTarget
+    fun onSentPacket(event: SentPacketEvent) {
+        mode.onSentPacket(event)
+    }
+
+    @EventTarget
+    fun onReceivedPacket(event: ReceivedPacketEvent) {
+        mode.onReceivedPacket(event)
+
         val packet = event.packet
         if (onExplosionValue.get() && packet is S27PacketExplosion) {
             mc.thePlayer.motionX += packet.func_149149_c() * horizontalExplosionValue.get()
             mc.thePlayer.motionY += packet.func_149144_d() * verticalExplosionValue.get()
             mc.thePlayer.motionZ += packet.func_149147_e() * horizontalExplosionValue.get()
-            event.cancelEvent()
+            event.isCancelled = true
         }
     }
 
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
-        if (mc.thePlayer.hurtTime <= 0) shouldAffect = (Math.random().toFloat() < reduceChance.get() / 100F)
+        if (mc.thePlayer.hurtTime <= 0)
+            shouldAffect = RandomUtils.nextFloat(0f, 100f) <= reduceChance.get()
+
         if (mc.thePlayer.isInWater || mc.thePlayer.isInLava || mc.thePlayer.isInWeb || !shouldAffect)
             return
+
         mode.onUpdate()
     }
 
     @EventTarget
     fun onJump(event: JumpEvent) {
-        if (mc.thePlayer == null || mc.thePlayer.isInWater || mc.thePlayer.isInLava || mc.thePlayer.isInWeb || !shouldAffect)
+        mc.thePlayer ?: return
+
+        if (mc.thePlayer.isInWater || mc.thePlayer.isInLava || mc.thePlayer.isInWeb || !shouldAffect)
             return
+
         mode.onJump(event)
     }
 
     @EventTarget
-    fun onMotion(event: MotionEvent) {
-        mode.onMotion(event)
+    fun onPreMotion(event: PreMotionEvent) {
+        mode.onPreMotion(event)
     }
 
     @EventTarget
     fun onTick(event: TickEvent) {
-        mode.onTick(event)
+        mode.onTick()
     }
-    
+
     @EventTarget
-    fun onStrafe(event: StrafeEvent) {
-        if (mc.thePlayer.isInWater || mc.thePlayer.isInLava || mc.thePlayer.isInWeb || !shouldAffect)
-            return
-        mode.onStrafe(event)
+    fun onAttack(event: AttackEvent) {
+        mode.onAttack(event)
     }
-    
+
+    @EventTarget
+    fun onKnockback(event: KnockbackEvent) {
+        mode.onKnockback(event)
+    }
+
+    @EventTarget
+    fun onMoveInput(event: MoveInputEvent) {
+        mode.onMoveInput(event)
+    }
+
     override val tag: String
         get() = modeValue.get()
 
     override val values = super.values.toMutableList().also {
         modes.map {
-            mode -> mode.values.forEach { value ->
-                val displayableFunction = value.displayableFunction
-                it.add(value.displayable { displayableFunction.invoke() && modeValue.get() == mode.modeName })
-            }
+                mode -> mode.values.forEach { value ->
+            val displayableFunction = value.displayableFunction
+            it.add(value.displayable { displayableFunction.invoke() && modeValue.get() == mode.modeName })
+        }
         }
     }
 }

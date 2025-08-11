@@ -5,6 +5,7 @@ import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
 import net.minusmc.minusbounce.MinusBounce
 import net.minusmc.minusbounce.event.*
+import net.minusmc.minusbounce.utils.extensions.*
 import net.minusmc.minusbounce.utils.EntityUtils
 import net.minusmc.minusbounce.utils.MinecraftInstance
 import net.minusmc.minusbounce.utils.timer.MSTimer
@@ -19,7 +20,7 @@ class CombatManager: MinecraftInstance(), Listenable {
 	@EventTarget
 	fun onUpdate(event: UpdateEvent) {
 		mc.thePlayer ?: return
-		attackedEntityList.map{it}.forEach {
+		attackedEntityList.map {it}.forEach {
 			if (it.isDead) {
 				MinusBounce.eventManager.callEvent(EntityKilledEvent(it))
 				attackedEntityList.remove(it)
@@ -34,7 +35,7 @@ class CombatManager: MinecraftInstance(), Listenable {
 		}
 
 		if (target != null) {
-			if (mc.thePlayer.getDistanceToEntity(target) > 7 || !inCombat || target!!.isDead) {
+			if (mc.thePlayer.getDistanceToEntityBox(target!!) > 7 || !inCombat || target!!.isDead) {
 				target = null
 			} else {
 				inCombat = true
@@ -59,16 +60,6 @@ class CombatManager: MinecraftInstance(), Listenable {
 		attackedEntityList.clear()
 		target = null
 		inCombat = false
-	}
-
-	fun getNearByEntity(radius: Float): EntityLivingBase? {
-		return try {
-			mc.theWorld.loadedEntityList.filter {
-				mc.thePlayer.getDistanceToEntity(it) < radius && EntityUtils.isSelected(it, true)
-			}.minByOrNull { it.getDistanceToEntity(mc.thePlayer) } as EntityLivingBase
-		} catch (e: Exception) {
-			null
-		}
 	}
 
 	override fun handleEvents() = true

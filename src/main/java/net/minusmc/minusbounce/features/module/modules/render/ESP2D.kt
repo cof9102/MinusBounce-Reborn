@@ -1,9 +1,7 @@
 /*
- * LiquidBounce++ Hacked Client
+ * MinusBounce Hacked Client
  * A free open source mixin-based injection hacked client for Minecraft using Minecraft Forge.
- * https://github.com/WYSI-Foundation/LiquidBouncePlus/
- *
- * This code belongs to WYSI-Foundation. Please give credits when using this in your repository.
+ * https://github.com/MinusMC/MinusBounce
  */
 package net.minusmc.minusbounce.features.module.modules.render
 
@@ -32,8 +30,6 @@ import net.minusmc.minusbounce.utils.EntityUtils
 import net.minusmc.minusbounce.utils.item.ItemUtils
 import net.minusmc.minusbounce.utils.render.BlendUtils
 import net.minusmc.minusbounce.utils.render.ColorUtils
-import net.minusmc.minusbounce.utils.render.ColorUtils.LiquidSlowly
-import net.minusmc.minusbounce.utils.render.ColorUtils.fade
 import net.minusmc.minusbounce.utils.render.RenderUtils
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.FloatValue
@@ -118,18 +114,10 @@ class ESP2D : Module() {
         }
         return when (colorModeValue.get()) {
             "Custom" -> Color(colorRedValue.get(), colorGreenValue.get(), colorBlueValue.get())
-            "Rainbow" -> Color(
-                RenderUtils.getRainbowOpaque(
-                    mixerSecondsValue.get(),
-                    saturationValue.get(),
-                    brightnessValue.get(),
-                    0
-                )
-            )
-
-            "Sky" -> RenderUtils.skyRainbow(0, saturationValue.get(), brightnessValue.get())
-            "LiquidSlowly" -> LiquidSlowly(System.nanoTime(), 0, saturationValue.get(), brightnessValue.get())
-            else -> fade(Color(colorRedValue.get(), colorGreenValue.get(), colorBlueValue.get()), 0, 100)
+            "Rainbow" -> Color(ColorUtils.getRainbowOpaque(mixerSecondsValue.get(), saturationValue.get(), brightnessValue.get(), 0))
+            "LiquidSlowly" -> ColorUtils.liquidSlowly(System.nanoTime(), 0, saturationValue.get(), brightnessValue.get())
+            "Sky" -> Color(ColorUtils.skyRainbow(0, saturationValue.get(), brightnessValue.get()))
+            else -> ColorUtils.fade(Color(colorRedValue.get(), colorGreenValue.get(), colorBlueValue.get()), 0, 100)
         }
     }
 
@@ -633,11 +621,8 @@ class ESP2D : Module() {
     companion object {
         var collectedEntities = ArrayList<EntityLivingBase>()
         fun shouldCancelNameTag(entity: EntityLivingBase?): Boolean {
-            return MinusBounce.moduleManager.getModule(ESP2D::class.java) != null && MinusBounce.moduleManager.getModule(
-                ESP2D::class.java
-            )!!.state && MinusBounce.moduleManager.getModule(
-                ESP2D::class.java
-            )!!.tagsValue.get() && collectedEntities.contains(entity)
+            val esp2d = MinusBounce.moduleManager[ESP2D::class.java] ?: return false
+            return esp2d.state && esp2d.tagsValue.get() && collectedEntities.contains(entity)
         }
     }
 }

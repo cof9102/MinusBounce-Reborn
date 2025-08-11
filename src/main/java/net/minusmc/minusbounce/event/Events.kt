@@ -7,7 +7,6 @@ package net.minusmc.minusbounce.event
 
 import net.minecraft.block.Block
 import net.minecraft.client.gui.GuiScreen
-import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.model.ModelPlayer
 import net.minecraft.client.multiplayer.WorldClient
 import net.minecraft.entity.Entity
@@ -21,17 +20,16 @@ import net.minecraft.util.EnumFacing
 
 /**
  * Called when player attacks other entity
- *
- * @param targetEntity Attacked entity
  */
 class AttackEvent(val targetEntity: Entity?) : CancellableEvent()
 
 /**
+ * Called when player received knockback from target
+ */
+class KnockbackEvent(var reduceY: Boolean) : CancellableEvent()
+
+/**
  * Called when minecraft get bounding box of block
- *
- * @param blockPos block position of block
- * @param block block itself
- * @param boundingBox vanilla bounding box
  */
 class BlockBBEvent(blockPos: BlockPos, val block: Block, var boundingBox: AxisAlignedBB?) : Event() {
     val x = blockPos.x
@@ -50,19 +48,9 @@ class ClickBlockEvent(val clickedBlock: BlockPos?, val enumFacing: EnumFacing?) 
 class ClientShutdownEvent : Event()
 
 /**
- * Called when an other entity moves
- */
-data class EntityMovementEvent(val movedEntity: Entity) : Event()
-
-/**
  * Called when an entity receives damage
  */
 class EntityDamageEvent(val damagedEntity: Entity): Event()
-
-/**
- * Called when a model updates
- */
-class UpdateModelEvent(val player: EntityPlayer, val model: ModelPlayer) : Event()
 
 /**
  * Called when world is going to be rendered
@@ -71,40 +59,47 @@ class Render3DEvent(val partialTicks: Float) : Event()
 
 /**
  * Called when player jumps
- *
- * @param motion jump motion (y motion)
  */
-class JumpEvent(var motion: Float) : CancellableEvent()
+class JumpEvent(var motion: Float, var yaw: Float) : CancellableEvent()
+
+/**
+ * interpolated look vector
+ */
+class LookEvent(var yaw: Float, var pitch: Float) : Event()
+
+/**
+ * Called when player input
+ */
+
+class MoveInputEvent(var forward: Float, var strafe: Float, var jump: Boolean, var sneak: Boolean, var sneakMultiplier: Double) : Event()
 
 /**
  * Called when user press a key once
- *
- * @param key Pressed key
  */
 class KeyEvent(val key: Int) : Event()
 
 /**
- * Called in "onUpdateWalkingPlayer"
- *
- * @param eventState PRE or POST
+ * Called before motion
  */
-class MotionEvent(var x: Double, var y: Double, var z: Double, var yaw: Float, var pitch: Float, var onGround: Boolean) : Event() {
-    var eventState: EventState = EventState.PRE
-}
+class PreMotionEvent(var x: Double, var y: Double, var z: Double, var yaw: Float, var pitch: Float, var onGround: Boolean): Event()
+
+/**
+ * Called after motion
+ */
+class PostMotionEvent: Event()
 
 /**
  * Called when player sprints or sneaks, after pre-motion event
- *
- * @param sprinting player's sprint state
- * @param sneaking player's sneak state
  */
 class ActionEvent(var sprinting: Boolean, var sneaking: Boolean) : Event()
 
 /**
+ * Called when receive or send a packet
+ */
+class PacketEvent(val packet: Packet<*>) : CancellableEvent()
+
+/**
  * Called in "onLivingUpdate" when the player is using a use item.
- *
- * @param strafe the applied strafe slow down
- * @param forward the applied forward slow down
  */
 class SlowDownEvent(var strafe: Float, var forward: Float) : CancellableEvent()
 
@@ -115,10 +110,6 @@ class StrafeEvent(var strafe: Float, var forward: Float, var friction: Float, va
 
 /**
  * Called when player moves
- *
- * @param x motion
- * @param y motion
- * @param z motion
  */
 class MoveEvent(var x: Double, var y: Double, var z: Double) : CancellableEvent() {
     var isSafeWalk = false
@@ -136,20 +127,19 @@ class MoveEvent(var x: Double, var y: Double, var z: Double) : CancellableEvent(
 }
 
 /**
- * Called when receive or send a packet
+ * Called when send a packet
  */
-class PacketEvent(val packet: Packet<*>) : CancellableEvent() {
-    // enum class Type {
-    //     RECEIVE,
-    //     SEND
-    // }
-    // fun isServerSide() = type == Type.RECEIVE
-}
+class SentPacketEvent(val packet: Packet<*>) : CancellableEvent()
+
+/**
+ * Called when receive a packet
+ */
+class ReceivedPacketEvent(val packet: Packet<*>) : CancellableEvent()
 
 /**
  * Called when a block tries to push you
  */
-class PushOutEvent : CancellableEvent()
+class PushOutEvent: CancellableEvent()
 
 /**
  * Called when screen is going to be rendered
@@ -195,7 +185,12 @@ class TickEvent : Event()
 /**
  * Called when minecraft player will be updated
  */
-class UpdateEvent : Event()
+class UpdateEvent: Event()
+
+/**
+ * Called before update
+ */
+class PreUpdateEvent: CancellableEvent()
 
 /**
  * Called when the world changes
@@ -218,6 +213,12 @@ class ReloadClientEvent : Event()
 class EntityKilledEvent(val targetEntity: EntityLivingBase): Event()
 
 /**
- * Called when check packet 
+ * Game loop event
  */
-class EventEarlyTick : Event()
+class GameLoopEvent: Event()
+
+/**
+ * Sprint state event
+ */
+class SprintStateEvent: CancellableEvent()
+

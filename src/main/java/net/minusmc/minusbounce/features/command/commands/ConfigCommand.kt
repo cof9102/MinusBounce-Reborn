@@ -13,7 +13,7 @@ import net.minusmc.minusbounce.utils.SettingsUtils
 import java.io.File
 import java.io.IOException
 
-class ConfigCommand: Command("config", arrayOf("settings")) {
+class ConfigCommand: Command("config", arrayOf("setting")) {
     /**
      * Execute commands with provided [args]
      */
@@ -109,7 +109,7 @@ class ConfigCommand: Command("config", arrayOf("settings")) {
                 chat("§9Set config...")
                 SettingsUtils.executeScript(settings)
                 chat("§6Config applied successfully.")
-                MinusBounce.hud.addNotification(Notification("Config Loaded", Notification.Type.SUCCESS))
+                MinusBounce.hud.addNotification(Notification("Config loaded", args[2], Notification.Type.SUCCESS))
                 playEdit()
             } catch (e: IOException) {
                 e.printStackTrace()

@@ -10,6 +10,7 @@ import net.minusmc.minusbounce.event.BlockBBEvent
 import net.minecraft.block.BlockAir
 import net.minecraft.util.AxisAlignedBB
 import net.minecraft.util.BlockPos
+import net.minusmc.minusbounce.utils.player.RotationUtils
 
 class ZoneCraftFly: FlyMode("ZoneCraft", FlyType.OTHER) {
     private val timerBoostValue = BoolValue("TimerBoost", false)
@@ -18,14 +19,13 @@ class ZoneCraftFly: FlyMode("ZoneCraft", FlyType.OTHER) {
         mc.timer.timerSpeed = 1f
 
         if (timerBoostValue.get()) {
-            if(mc.thePlayer.ticksExisted % 20 < 10) {
+            if (mc.thePlayer.ticksExisted % 20 < 10)
                 mc.timer.timerSpeed = 1.25f
-            } else {
+            else
                 mc.timer.timerSpeed = 0.8f
-            }
         }
         
-        RotationUtils.setTargetRot(Rotation(mc.thePlayer.rotationYaw, 90f))
+        RotationUtils.setTargetRotation(Rotation(mc.thePlayer.rotationYaw, 90f))
         mc.netHandler.networkManager.sendPacket(C08PacketPlayerBlockPlacement(BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ), 1, null, 0f, 1f, 0f))
 
     }

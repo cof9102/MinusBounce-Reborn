@@ -12,12 +12,13 @@ import net.minecraft.network.play.client.C02PacketUseEntity
 import net.minecraft.network.play.client.C09PacketHeldItemChange
 import net.minusmc.minusbounce.event.AttackEvent
 import net.minusmc.minusbounce.event.EventTarget
-import net.minusmc.minusbounce.event.PacketEvent
+import net.minusmc.minusbounce.event.SentPacketEvent
 import net.minusmc.minusbounce.event.UpdateEvent
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.utils.timer.MSTimer
+import net.minusmc.minusbounce.utils.PacketUtils
 import net.minusmc.minusbounce.utils.item.ItemUtils
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.IntegerValue
@@ -31,44 +32,36 @@ class AutoWeapon : Module() {
 
     private var spoofedSlot = 0
 
-    private var resetSlot = true
-    private val msTimer = MSTimer()
-
     @EventTarget
     fun onAttack(event: AttackEvent) {
         attackEnemy = true
     }
 
     @EventTarget
-    fun onPacket(event: PacketEvent) {
-        if (event.packet is C02PacketUseEntity && event.packet.action == C02PacketUseEntity.Action.ATTACK
-                && attackEnemy) {
+    fun onPacket(event: SentPacketEvent) {
+        if (event.packet is C02PacketUseEntity && event.packet.action == C02PacketUseEntity.Action.ATTACK && attackEnemy) {
             attackEnemy = false
 
             // Find the best weapon in hotbar (#Kotlin Style)
-            val (slot, _) = (0..8)
-                    .map { Pair(it, mc.thePlayer.inventory.getStackInSlot(it)) }
-                    .filter { it.second != null && (it.second.item is ItemSword || it.second.item is ItemTool) }
-                    .maxByOrNull {
-                        (it.second.attributeModifiers["generic.attackDamage"].first()?.amount
-                                ?: 0.0) + 1.25 * ItemUtils.getEnchantment(it.second, Enchantment.sharpness)
-                    } ?: return
+            val (slot, _) = (0..8).map { Pair(it, mc.thePlayer.inventory.getStackInSlot(it)) }
+                .filter { it.second != null && (it.second.item is ItemSword || it.second.item is ItemTool) }
+                .maxByOrNull {
+                    (it.second.attributeModifiers["generic.attackDamage"].first()?.amount ?: 0.0) + 1.25 * ItemUtils.getEnchantment(it.second, Enchantment.sharpness)
+                } ?: return
 
             if (slot == mc.thePlayer.inventory.currentItem)
                 return
 
             if (silentValue.get()) {
-                mc.netHandler.addToSendQueue(C09PacketHeldItemChange(slot))
+                PacketUtils.sendPacketNoEvent(C09PacketHeldItemChange(slot))
                 spoofedSlot = ticksValue.get()
             } else {
                 mc.thePlayer.inventory.currentItem = slot
                 mc.playerController.updateController()
             }
 
-            resetSlot = true
-
-            mc.netHandler.addToSendQueue(event.packet)
-            event.cancelEvent()
+            PacketUtils.sendPacketNoEvent(event.packet)
+            event.isCancelled = true
         }
     }
 
@@ -77,16 +70,8 @@ class AutoWeapon : Module() {
         // Switch back to old item after some time
         if (spoofedSlot > 0) {
             if (spoofedSlot == 1)
-                mc.netHandler.addToSendQueue(C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem))
+                PacketUtils.sendPacketNoEvent(C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem))
             spoofedSlot--
-        }
-
-        if (resetSlot && msTimer.hasTimePassed(250)) {
-            println("Switch slot.")
-            mc.thePlayer.inventory.currentItem = (mc.thePlayer.inventory.currentItem + 1) % 9
-            mc.playerController.updateController()
-            resetSlot = false
-            msTimer.reset()
         }
     }
 }

@@ -5,16 +5,24 @@
  */
 package net.minusmc.minusbounce.utils.block
 
-import net.minusmc.minusbounce.utils.MinecraftInstance
 import net.minecraft.block.Block
+import net.minecraft.block.BlockAir
 import net.minecraft.block.material.Material
 import net.minecraft.block.state.IBlockState
-import net.minecraft.util.AxisAlignedBB
-import net.minecraft.util.BlockPos
 import net.minecraft.init.Blocks
-import net.minecraft.util.MathHelper
-import net.minecraft.util.Vec3
+import net.minecraft.util.*
+import net.minusmc.minusbounce.injection.access.StaticStorage
+import net.minusmc.minusbounce.utils.MinecraftInstance
+import net.minusmc.minusbounce.utils.PlaceRotation
+import net.minusmc.minusbounce.utils.Rotation
+import net.minusmc.minusbounce.utils.extensions.iterator
+import net.minusmc.minusbounce.utils.player.RotationUtils
+import kotlin.collections.set
+import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.floor
+import kotlin.math.sqrt
+
 
 object BlockUtils : MinecraftInstance() {
 
@@ -23,6 +31,9 @@ object BlockUtils : MinecraftInstance() {
      */
     @JvmStatic
     fun getBlock(blockPos: BlockPos?): Block? = mc.theWorld?.getBlockState(blockPos)?.block
+
+    @JvmStatic
+    fun getBlock(x: Number, y: Number, z: Number) = getBlock(BlockPos(x.toInt(), y.toInt(), z.toInt()))
 
     /**
      * Get material from [blockPos]
@@ -156,5 +167,9 @@ object BlockUtils : MinecraftInstance() {
 
     fun getBlockName2(id: Int): String {
         return Block.getBlockById(id).registryName.replace(Regex("^minecraft:"), "")
+    }
+
+    fun block(x: Double, y: Double, z: Double): Block {
+        return mc.theWorld.getBlockState(BlockPos(x, y, z)).block
     }
 }

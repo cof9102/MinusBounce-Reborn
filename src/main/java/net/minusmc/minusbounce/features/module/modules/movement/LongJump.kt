@@ -6,7 +6,7 @@ import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.features.module.modules.movement.longjumps.LongJumpMode
 import net.minusmc.minusbounce.utils.ClassUtils
-import net.minusmc.minusbounce.utils.MovementUtils
+import net.minusmc.minusbounce.utils.player.MovementUtils
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.ListValue
 
@@ -20,10 +20,10 @@ class LongJump: Module() {
         get() = modes.find { modeValue.get().equals(it.modeName, true) } ?: throw NullPointerException()
 
     private val modeValue: ListValue = object: ListValue("Mode", modes.map{ it.modeName }.toTypedArray(), "MatrixFlag") {
-        override fun onChange(oldValue: String, newValue: String) {
+        override fun onPreChange(oldValue: String, newValue: String) {
             if (state) onDisable()
         }
-        override fun onChanged(oldValue: String, newValue: String) {
+        override fun onPostChange(oldValue: String, newValue: String) {
             if (state) onEnable()
         }
     }
@@ -46,13 +46,14 @@ class LongJump: Module() {
 
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
-        mode.onUpdateSpecial()
-        if(jumped) {
+        mode.onUpdate()
+
+        if (jumped) {
             if (mc.thePlayer.onGround || mc.thePlayer.capabilities.isFlying) {
                 jumped = false
                 return
             }
-            mode.onUpdate()
+            mode.onUpdateJumped()
         }
 
         if (autoJumpValue.get() && mc.thePlayer.onGround && MovementUtils.isMoving) {
@@ -62,8 +63,13 @@ class LongJump: Module() {
     }
 
     @EventTarget
-    fun onPacket(event: PacketEvent) {
-        mode.onPacket(event)
+    fun onSentPacket(event: SentPacketEvent) {
+        mode.onSentPacket(event)
+    }
+
+    @EventTarget
+    fun onReceivedPacket(event: ReceivedPacketEvent) {
+        mode.onReceivedPacket(event)
     }
 
     @EventTarget

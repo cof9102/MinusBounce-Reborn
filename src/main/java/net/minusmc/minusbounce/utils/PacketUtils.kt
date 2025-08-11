@@ -5,19 +5,73 @@
  */
 package net.minusmc.minusbounce.utils
 
+import net.minecraft.network.INetHandler
+import net.minecraft.network.NetworkManager
 import net.minecraft.network.Packet
 import net.minecraft.network.play.INetHandlerPlayServer
-import net.minecraft.network.play.server.S32PacketConfirmTransaction
-import net.minusmc.minusbounce.event.EventTarget
-import net.minusmc.minusbounce.event.Listenable
-import net.minusmc.minusbounce.event.PacketEvent
-import net.minusmc.minusbounce.event.TickEvent
+import net.minecraft.network.play.INetHandlerPlayClient
+import net.minecraft.network.play.server.*
+import net.minusmc.minusbounce.event.*
 import net.minusmc.minusbounce.utils.timer.MSTimer
 
-class PacketUtils : MinecraftInstance(), Listenable {
+object PacketUtils : MinecraftInstance(), Listenable {
+    val packetList = arrayListOf<Packet<*>>()
+    var inBound = 0
+    var outBound = 0
+    var avgInBound = 0
+    var avgOutBound = 0
+
+    private val packetTimer = MSTimer()
+    private val wdTimer = MSTimer()
+
     @EventTarget
-    fun onPacket(event: PacketEvent) {
-        handlePacket(event.packet)
+    fun onSentPacket(event: SentPacketEvent) {
+        outBound++
+    }
+
+    @EventTarget
+    fun onReceivedPacket(event: ReceivedPacketEvent) {
+        inBound++
+    }
+
+    fun sendPacketNoEvent(packet: Packet<*>) {
+        packetList.add(packet)
+
+        val netManager = mc.netHandler?.networkManager ?: return
+        if (netManager.isChannelOpen) {
+            netManager.flushOutboundQueue()
+            netManager.dispatchPacket(packet, null)
+        } else {
+            netManager.readWriteLock.writeLock().lock()
+            try {
+                netManager.outboundPacketsQueue += NetworkManager.InboundHandlerTuplePacketListener(packet, null)
+            } finally {
+                netManager.readWriteLock.writeLock().unlock()
+            }
+        }
+    }
+
+    fun receivePacketNoEvent(packet: Packet<INetHandlerPlayServer>) {
+        val netManager = mc.netHandler?.networkManager ?: return
+
+        if (netManager.channel.isOpen) {
+            try {
+                packet.processPacket(netManager.packetListener as INetHandlerPlayServer)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun processPacket(packet: Packet<*>) {
+        val netManager = mc.netHandler?.networkManager ?: return
+
+        try {
+            (packet as Packet<INetHandler>).processPacket(netManager.netHandler)
+        } catch (_: Exception) {}
+    }
+
+    @EventTarget
+    fun onWorld(event: WorldEvent) {
+        packetList.clear()
     }
 
     @EventTarget
@@ -26,71 +80,12 @@ class PacketUtils : MinecraftInstance(), Listenable {
             avgInBound = inBound
             avgOutBound = outBound
             outBound = 0
-            inBound = outBound
+            inBound = 0
             packetTimer.reset()
         }
-        if (mc.thePlayer == null || mc.theWorld == null) {
-            //reset all checks
-            wdVL = 0
-            transCount = 0
-            wdTimer.reset()
-        } else if (wdTimer.hasTimePassed(100L)) { // watchdog active when the transaction poll rate reaches about 100ms/packet.
-            wdVL += if (transCount > 0) 1 else -1
-            transCount = 0
-            if (wdVL > 10) wdVL = 10
-            if (wdVL < 0) wdVL = 0
-            wdTimer.reset()
-        }
     }
 
-    /**
-     * @return wow
-     */
-    override fun handleEvents(): Boolean {
-        return true
-    }
+    private fun isInventoryAction(action: Short): Boolean = action in 1..99
 
-    companion object {
-        var inBound = 0
-        var outBound = 0
-        var avgInBound = 0
-        var avgOutBound = 0
-        private val packets = ArrayList<Packet<INetHandlerPlayServer>>()
-        private val packetTimer = MSTimer()
-        private val wdTimer = MSTimer()
-        private var transCount = 0
-        private var wdVL = 0
-        private fun isInventoryAction(action: Short): Boolean {
-            return action > 0 && action < 100
-        }
-
-        val isWatchdogActive: Boolean
-            get() = wdVL >= 8
-
-        fun handlePacket(packet: Packet<*>) {
-            if (packet.javaClass.getSimpleName().startsWith("C")) outBound++ else if (packet.javaClass.getSimpleName()
-                    .startsWith("S")
-            ) inBound++
-            if (packet is S32PacketConfirmTransaction) {
-                if (!isInventoryAction(packet.actionNumber)) transCount++
-            }
-        }
-
-        /*
-     * This code is from UnlegitMC/FDPClient. Please credit them when using this code in your repository.
-     */
-        fun sendPacketNoEvent(packet: Packet<INetHandlerPlayServer>) {
-            packets.add(packet)
-            mc.netHandler.addToSendQueue(packet)
-        }
-
-        fun handleSendPacket(packet: Packet<*>): Boolean {
-            if (packets.contains(packet)) {
-                packets.remove(packet)
-                handlePacket(packet) // make sure not to skip silent packets.
-                return true
-            }
-            return false
-        }
-    }
+    override fun handleEvents() = true
 }

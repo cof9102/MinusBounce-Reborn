@@ -2,11 +2,11 @@ package net.minusmc.minusbounce.features.module.modules.movement.speeds.ncp
 
 import net.minusmc.minusbounce.features.module.modules.movement.speeds.SpeedMode
 import net.minusmc.minusbounce.features.module.modules.movement.speeds.SpeedType
-import net.minusmc.minusbounce.utils.MovementUtils
+import net.minusmc.minusbounce.utils.player.MovementUtils
 import net.minusmc.minusbounce.value.FloatValue
 
 class NCPYPort2Speed: SpeedMode("NCPYPort2", SpeedType.NCP) {
-	var ticks = 0
+	private var ticks = 0
     private var jumps = 0
 
     private val jumpBoost = FloatValue("JumpLaunchSpeed", 0.98f, 0f, 2f)
@@ -16,14 +16,12 @@ class NCPYPort2Speed: SpeedMode("NCPYPort2", SpeedType.NCP) {
 
 
     override fun onEnable() {
-        super.onEnable()
         mc.thePlayer.speedInAir = 0.0213f
     }
 
     override fun onDisable() {
         mc.thePlayer.speedInAir = 0.02f
         mc.timer.timerSpeed = 1f
-        super.onDisable()
     }
 
     override fun onUpdate() {

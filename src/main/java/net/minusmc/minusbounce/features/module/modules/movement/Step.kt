@@ -11,7 +11,7 @@ import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.features.module.modules.exploit.Phase
-import net.minusmc.minusbounce.utils.MovementUtils
+import net.minusmc.minusbounce.utils.player.MovementUtils
 import net.minusmc.minusbounce.utils.timer.MSTimer
 import net.minusmc.minusbounce.value.FloatValue
 import net.minusmc.minusbounce.value.IntegerValue
@@ -157,7 +157,7 @@ class Step : Module() {
                     }
 
                     ncpNextStep == 2 -> {
-                        val yaw = MovementUtils.direction
+                        val yaw = MovementUtils.directionToRadian
 
                         event.y = 1.001335979112147 - 0.7531999805212
                         event.x = -sin(yaw) * 0.7
@@ -536,7 +536,7 @@ class Step : Module() {
     }
 
     @EventTarget(ignoreCondition = true)
-    fun onPacket(event: PacketEvent) {
+    fun onSentPacket(event: SentPacketEvent) {
         val packet = event.packet
 
         if (packet is C03PacketPlayer && isStep && modeValue.get().equals("OldNCP", true)) {
@@ -552,7 +552,7 @@ class Step : Module() {
     }
 
     private fun couldStep(): Boolean {
-        val yaw = MovementUtils.direction
+        val yaw = MovementUtils.directionToRadian
         val x = -sin(yaw) * 0.4
         val z = cos(yaw) * 0.4
 

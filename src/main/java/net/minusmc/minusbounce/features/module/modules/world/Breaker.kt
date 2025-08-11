@@ -18,12 +18,11 @@ import net.minusmc.minusbounce.features.module.modules.combat.KillAura
 import net.minusmc.minusbounce.features.module.modules.player.AutoTool
 import net.minusmc.minusbounce.ui.client.hud.element.elements.Notification
 import net.minusmc.minusbounce.ui.font.Fonts
-import net.minusmc.minusbounce.utils.RotationUtils
+import net.minusmc.minusbounce.utils.player.RotationUtils
 import net.minusmc.minusbounce.utils.block.BlockUtils.getBlock
 import net.minusmc.minusbounce.utils.block.BlockUtils.getBlockName
 import net.minusmc.minusbounce.utils.block.BlockUtils.getCenterDistance
 import net.minusmc.minusbounce.utils.block.BlockUtils.isFullBlock
-import net.minusmc.minusbounce.utils.extensions.getBlock
 import net.minusmc.minusbounce.utils.render.RenderUtils
 import net.minusmc.minusbounce.utils.timer.MSTimer
 import net.minusmc.minusbounce.value.*
@@ -94,9 +93,7 @@ object Breaker : Module() {
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
         if (noHitValue.get()) {
-            val killAura = MinusBounce.moduleManager.getModule(KillAura::class.java) as KillAura
-
-            if (killAura.state && killAura.target != null)
+            if (MinusBounce.moduleManager[KillAura::class.java]!!.state && MinusBounce.combatManager.target != null)
                 return
         }
 
@@ -123,7 +120,7 @@ object Breaker : Module() {
             val blockPos = mc.theWorld.rayTraceBlocks(eyes, rotations.vec, false,
                     false, true).blockPos
 
-            if (blockPos != null && blockPos.getBlock() !is BlockAir) {
+            if (blockPos != null && getBlock(blockPos) !is BlockAir) {
                 if (currentPos.x != blockPos.x || currentPos.y != blockPos.y || currentPos.z != blockPos.z)
                     surroundings = true
 
@@ -167,7 +164,7 @@ object Breaker : Module() {
 
         // Face block
         if (rotationsValue.get())
-            RotationUtils.setTargetRot(rotations.rotation)
+            RotationUtils.setTargetRotation(rotations.rotation)
 
         when {
             // Destory block
@@ -194,7 +191,7 @@ object Breaker : Module() {
                 }
 
                 // Minecraft block breaking
-                val block = currentPos.getBlock() ?: return
+                val block = getBlock(currentPos) ?: return
 
                 if (currentDamage == 0F) {
                     mc.netHandler.addToSendQueue(C07PacketPlayerDigging(C07PacketPlayerDigging.Action.START_DESTROY_BLOCK,
@@ -332,7 +329,7 @@ object Breaker : Module() {
             if (firstPos == null) {
                 firstPos = nearestBlock
                 MinusBounce.hud.addNotification(
-                    Notification(
+                    Notification("Breaker", 
                         "Found first ${getBlockName(targetID)} block at ${nearestBlock.x} ${nearestBlock.y} ${nearestBlock.z}",
                         Notification.Type.SUCCESS
                     )
@@ -348,7 +345,7 @@ object Breaker : Module() {
                 }
                 if (firstPosBed != null)
                     MinusBounce.hud.addNotification(
-                        Notification(
+                        Notification("Breaker", 
                             "Found second Bed block at ${firstPosBed!!.x} ${firstPosBed!!.y} ${firstPosBed!!.z}",
                             Notification.Type.SUCCESS
                         )
