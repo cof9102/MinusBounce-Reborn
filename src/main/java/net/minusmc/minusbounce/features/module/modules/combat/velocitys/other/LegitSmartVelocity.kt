@@ -1,8 +1,9 @@
 package net.minusmc.minusbounce.features.module.modules.combat.velocitys.other
 
 import net.minusmc.minusbounce.features.module.modules.combat.velocitys.VelocityMode
-import net.minusmc.minusbounce.event.EventTarget
+import net.minusmc.minusbounce.event.UpdateEvent
 import net.minusmc.minusbounce.event.PacketEvent
+import net.minusmc.minusbounce.features.module.modules.combat.Velocity
 import net.minusmc.minusbounce.value.IntegerValue
 import net.minecraft.network.play.server.S12PacketEntityVelocity
 
@@ -11,8 +12,7 @@ class LegitSmartVelocity : VelocityMode("LegitSmart") {
     private var legitSmartJumpCount = 0
     private var hasReceivedVelocity = false
 
-    @EventTarget
-    fun onPacket(event: PacketEvent) {
+    override fun onPacket(event: PacketEvent) {
         val packet = event.packet
         val thePlayer = mc.thePlayer ?: return
 
@@ -25,11 +25,11 @@ class LegitSmartVelocity : VelocityMode("LegitSmart") {
         val thePlayer = mc.thePlayer ?: return
 
         if (hasReceivedVelocity) {
-            if (thePlayer.onGround &&
-                thePlayer.hurtTime == 9 &&
-                thePlayer.isSprinting &&
+            if (thePlayer.onGround && 
+                thePlayer.hurtTime == 9 && 
+                thePlayer.isSprinting && 
                 mc.currentScreen == null) {
-
+    
                 if (legitSmartJumpCount > legitSmartJumpLimit.get()) {
                     legitSmartJumpCount = 0
                 } else {
