@@ -20,6 +20,7 @@ object PacketUtils : MinecraftInstance(), Listenable {
     var outBound = 0
     var avgInBound = 0
     var avgOutBound = 0
+    private var transCount = 0
 
     private val packetTimer = MSTimer()
     private val wdTimer = MSTimer()
@@ -50,6 +51,20 @@ object PacketUtils : MinecraftInstance(), Listenable {
             }
         }
     }
+    fun handlePacket(packet: Packet<*>) {
+        if (packet.javaClass.simpleName.startsWith("C")) {
+            outBound++
+        } else if (packet.javaClass.simpleName.startsWith("S")) {
+            inBound++
+        }
+
+        if (packet is S32PacketConfirmTransaction) {
+            if (!isInventoryAction(packet.actionNumber)) {
+                transCount++
+            }
+        }
+    }
+
 
     fun receivePacketNoEvent(packet: Packet<INetHandlerPlayServer>) {
         val netManager = mc.netHandler?.networkManager ?: return
