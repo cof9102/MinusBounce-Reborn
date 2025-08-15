@@ -87,7 +87,7 @@ class KillAura : Module() {
 
     private val onlyHitOnMouseToTarget = BoolValue("OnlyHitOnMouseToTarget", false) { !rotationValue.get().equals("none", true) }
 
-    val autoBlockModeValue: ListValue = object : ListValue("AutoBlock", arrayOf("None", "AfterTick", "Vanilla", "NewNCP", "RightHold", "Swing"), "None") {
+    val autoBlockModeValue: ListValue = object : ListValue("AutoBlock", arrayOf("None", "AfterTick", "Vanilla", "NewNCP", "RightHold", "Fake"), "None") {
         override fun onPreChange(oldValue: String, newValue: String) {
             if (state) onDisable()
         }
@@ -127,6 +127,7 @@ class KillAura : Module() {
 
     // Fake block status
     var blockingStatus = false
+    var fakeBlock = false
 
     override fun onEnable() {
         mc.theWorld ?: return
@@ -187,13 +188,8 @@ class KillAura : Module() {
                 "aftertick" -> startBlocking {
                     mc.netHandler.addToSendQueue(C08PacketPlayerBlockPlacement(mc.thePlayer.inventory.getCurrentItem()))
                 }
-                "swing" -> when (mc.thePlayer.swingProgressInt) {
-                    1 -> startBlocking { mc.netHandler.addToSendQueue(C08PacketPlayerBlockPlacement(mc.thePlayer.inventory.getCurrentItem())) }
-                    2 -> stopBlocking { mc.netHandler.addToSendQueue(C07PacketPlayerDigging(C07PacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, EnumFacing.DOWN)) }
-                }
             }
         }
-        
     }
 
     @EventTarget
@@ -457,6 +453,9 @@ class KillAura : Module() {
             "vanilla" -> startBlocking {
                 mc.netHandler.addToSendQueue(C08PacketPlayerBlockPlacement(mc.thePlayer.inventory.getCurrentItem()))
             }
+            "fake" -> {
+                fakeBlock = true
+            }
             "newncp" -> startBlocking {
                 mc.netHandler.addToSendQueue(C08PacketPlayerBlockPlacement(BlockPos(-1, -1, -1), 255, null, 0.0f, 0.0f, 0.0f))
             }
@@ -509,6 +508,7 @@ class KillAura : Module() {
         if (blockingStatus) {   
             sendPacketUnblocking()
             blockingStatus = false
+            fakeBlock = false
         }
     }
 

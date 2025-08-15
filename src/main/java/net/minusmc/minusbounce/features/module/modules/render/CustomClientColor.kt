@@ -11,7 +11,7 @@ import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.value.IntegerValue
 import java.awt.Color
 
-@ModuleInfo(name = "beophimandz", spacedName = "beophiman dz", description = "beophiman dz.", category = ModuleCategory.RENDER)
+@ModuleInfo(name = "CustomClientColor", spacedName = "Custom Client Color", description = "Custom Color", category = ModuleCategory.RENDER)
 object CustomClientColor : Module() {
     private val redValue = IntegerValue("Red", 255,0,255)
     private val greenValue = IntegerValue("Green", 255,0,255)

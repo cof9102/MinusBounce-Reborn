@@ -15,6 +15,7 @@ import net.minecraft.network.play.client.C0APacketAnimation
 import net.minecraft.network.play.client.C0BPacketEntityAction
 import net.minecraft.stats.StatList
 import net.minecraft.util.*
+import net.minusmc.minusbounce.MinusBounce
 import net.minusmc.minusbounce.event.*
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
@@ -23,6 +24,7 @@ import net.minusmc.minusbounce.features.module.modules.world.scaffold.TowerScaff
 import net.minusmc.minusbounce.injection.access.StaticStorage
 import net.minusmc.minusbounce.ui.font.Fonts
 import net.minusmc.minusbounce.utils.*
+import net.minusmc.minusbounce.utils.CounterUtils
 import net.minusmc.minusbounce.utils.extensions.*
 import net.minusmc.minusbounce.utils.block.BlockUtils
 import net.minusmc.minusbounce.utils.block.PlaceInfo
@@ -72,7 +74,7 @@ class Scaffold: Module() {
         }
     }
 
-    private val autoBlockMode = ListValue("AutoBlock", arrayOf("Spoof", "LiteSpoof", "Switch", "Off"), "Spoof")
+    private val autoBlockMode = ListValue("AutoBlock", arrayOf("Spoof", "Switch", "Off"), "Spoof")
     private val sprintModeValue = ListValue("SprintMode", arrayOf("Always", "OnGround", "OffGround", "Legit", "Watchdog", "BlocksMC", "LuckyVN", "Off"), "Off")
 
     private val swingValue = ListValue("Swing", arrayOf("Normal", "Packet", "Off"), "Normal")
@@ -139,25 +141,23 @@ class Scaffold: Module() {
     private val safeWalkValue = ListValue("SafeWalk", arrayOf("Ground", "Air", "Off"), "Off")
     private val hitableCheckValue = BoolValue("HitableCheck", true)
     private val allowTntBlock = BoolValue("AllowTntBlock", false)
-
-    private val counterDisplayValue = ListValue("Counter", arrayOf("Simple", "Advanced", "Rise", "Sigma", "Novoline", "Off"), "Simple")
-    private val blurValue = BoolValue("Blur-Advanced", false) { counterDisplayValue.get().equals("advanced", true) }
-    private val blurStrength = FloatValue("Blur-Strength", 1F, 0F, 30F, "x") {
-        counterDisplayValue.get().equals("advanced", true)
-    }
-
+    // render
+    private val counter = BoolValue("Counter", false)
     private val markValue = BoolValue("Mark", false)
     private val redValue = IntegerValue("Red", 0, 0, 255) { markValue.get() }
     private val greenValue = IntegerValue("Green", 120, 0, 255) { markValue.get() }
     private val blueValue = IntegerValue("Blue", 255, 0, 255) { markValue.get() }
-
     private var targetPlace: PlaceInfo? = null
 
     private var lockRotation: Rotation? = null
     private var speenRotation: Rotation? = null
+    val counterUtils = CounterUtils()
 
     // Launch pos
     private var launchY = 0
+
+    //prevItem
+    private var prevItem = -1
 
     // Render thingy
     private var progress = 0f
@@ -461,16 +461,20 @@ class Scaffold: Module() {
         var blockSlot = -1
         var itemStack = mc.thePlayer.heldItem
 
-        if (mc.thePlayer.heldItem == null || !(mc.thePlayer.heldItem.item is ItemBlock && isBlockToScaffold(mc.thePlayer.heldItem.item as ItemBlock))) {
+        if (mc.thePlayer.heldItem == null ||
+            !(mc.thePlayer.heldItem.item is ItemBlock && isBlockToScaffold(mc.thePlayer.heldItem.item as ItemBlock))
+        ) {
             if (autoBlockMode.get().equals("Off", true)) return
 
             blockSlot = InventoryUtils.findAutoBlockBlock()
             if (blockSlot == -1) return
 
-            if (autoBlockMode.get().equals("LiteSpoof", true) || autoBlockMode.get().equals("Spoof", true))
+            if (autoBlockMode.get().equals("Spoof", true)) {
                 mc.netHandler.addToSendQueue(C09PacketHeldItemChange(blockSlot - 36))
-            else
+            } else {
                 mc.thePlayer.inventory.currentItem = blockSlot - 36
+            }
+
             itemStack = mc.thePlayer.inventoryContainer.getSlot(blockSlot).stack
         }
 
@@ -487,10 +491,6 @@ class Scaffold: Module() {
                 "normal" -> mc.thePlayer.swingItem()
                 "packet" -> mc.netHandler.addToSendQueue(C0APacketAnimation())
             }
-        }
-
-        if (autoBlockMode.get().equals("LiteSpoof", true) && blockSlot >= 0) {
-            mc.netHandler.addToSendQueue(C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem))
         }
 
         this.targetPlace = null
@@ -514,7 +514,13 @@ class Scaffold: Module() {
 
         if (slot != mc.thePlayer.inventory.currentItem) mc.netHandler.addToSendQueue(C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem))
     }
-
+    @EventTarget
+    fun onRender2D(event: Render2DEvent) {
+        if (counter.get()) {
+            counterUtils.counter()
+        }
+    }
+    
     @EventTarget
     fun onMove(event: MoveEvent) {
         if (safeWalkValue.get().equals("off", true) || shouldGoDown) return
@@ -524,126 +530,6 @@ class Scaffold: Module() {
     @EventTarget
     fun onJump(event: JumpEvent) {
         if (towerStatus) event.isCancelled = true
-    }
-
-    @EventTarget
-    fun onRender2D(event: Render2DEvent) {
-        progress = (System.currentTimeMillis() - lastMS).toFloat() / 100F
-        if (progress >= 1) progress = 1f
-
-        val scaledResolution = ScaledResolution(mc)
-        val info = "$blocksAmount blocks"
-
-        val infoWidth = Fonts.fontSFUI40.getStringWidth(info)
-        val infoWidth2 = Fonts.minecraftFont.getStringWidth(blocksAmount.toString())
-
-        when (counterDisplayValue.get().lowercase()) {
-            "simple" -> {
-                Fonts.minecraftFont.drawString(blocksAmount.toString(), (scaledResolution.scaledWidth / 2 - (infoWidth2 / 2) - 1).toFloat(), (scaledResolution.scaledHeight / 2 - 36).toFloat(), 0xff000000.toInt(), false)
-                Fonts.minecraftFont.drawString(blocksAmount.toString(), (scaledResolution.scaledWidth / 2 - (infoWidth2 / 2) + 1).toFloat(), (scaledResolution.scaledHeight / 2 - 36).toFloat(), 0xff000000.toInt(), false)
-                Fonts.minecraftFont.drawString(blocksAmount.toString(), (scaledResolution.scaledWidth / 2 - (infoWidth2 / 2)).toFloat(), (scaledResolution.scaledHeight / 2 - 35).toFloat(), 0xff000000.toInt(), false)
-                Fonts.minecraftFont.drawString(blocksAmount.toString(), (scaledResolution.scaledWidth / 2 - (infoWidth2 / 2)).toFloat(), (scaledResolution.scaledHeight / 2 - 37).toFloat(), 0xff000000.toInt(), false)
-                Fonts.minecraftFont.drawString(blocksAmount.toString(), (scaledResolution.scaledWidth / 2 - (infoWidth2 / 2)).toFloat(), (scaledResolution.scaledHeight / 2 - 36).toFloat(), -1, false)
-            }
-            "advanced" -> {
-                val canRenderStack = slot in 0..8 && mc.thePlayer.inventory.mainInventory[slot] != null && mc.thePlayer.inventory.mainInventory[slot].item != null && mc.thePlayer.inventory.mainInventory[slot].item is ItemBlock
-                if (blurValue.get())
-                    BlurUtils.blurArea((scaledResolution.scaledWidth / 2 - (infoWidth / 2) - 4).toFloat(), (scaledResolution.scaledHeight / 2 - 39).toFloat(), (scaledResolution.scaledWidth / 2 + (infoWidth / 2) + 4).toFloat(), (scaledResolution.scaledHeight / 2 - (if (canRenderStack) 5 else 26)).toFloat(), blurStrength.get())
-
-                RenderUtils.drawRect((scaledResolution.scaledWidth / 2 - (infoWidth / 2) - 4).toFloat(), (scaledResolution.scaledHeight / 2 - 40).toFloat(), (scaledResolution.scaledWidth / 2 + (infoWidth / 2) + 4).toFloat(), (scaledResolution.scaledHeight / 2 - 39).toFloat(), (if (blocksAmount > 1) 0xffffffff else 0xffff1010).toInt())
-                RenderUtils.drawRect((scaledResolution.scaledWidth / 2 - (infoWidth / 2) - 4).toFloat(), (scaledResolution.scaledHeight / 2 - 39).toFloat(), (scaledResolution.scaledWidth / 2 + (infoWidth / 2) + 4).toFloat(), (scaledResolution.scaledHeight / 2 - 26).toFloat(), 0xa0000000.toInt())
-
-                if (canRenderStack) {
-                    RenderUtils.drawRect((scaledResolution.scaledWidth / 2 - (infoWidth / 2) - 4).toFloat(), (scaledResolution.scaledHeight / 2 - 26).toFloat(), (scaledResolution.scaledWidth / 2 + (infoWidth / 2) + 4).toFloat(), (scaledResolution.scaledHeight / 2 - 5).toFloat(), 0xa0000000.toInt())
-                    GlStateManager.pushMatrix()
-                    GlStateManager.translate((scaledResolution.scaledWidth / 2 - 8).toDouble(), (scaledResolution.scaledHeight / 2 - 25).toDouble(), (scaledResolution.scaledWidth / 2 - 8).toDouble())
-                    renderItemStack(mc.thePlayer.inventory.mainInventory[slot], 0, 0)
-                    GlStateManager.popMatrix()
-                }
-                GlStateManager.resetColor()
-
-                Fonts.fontSFUI40.drawCenteredString(info, (scaledResolution.scaledWidth / 2).toFloat(), (scaledResolution.scaledHeight / 2 - 36).toFloat(), -1)
-            }
-            "sigma" -> {
-                GlStateManager.translate(0.0, (-14F - (progress * 4F)).toDouble(), 0.0)
-                GL11.glEnable(GL11.GL_BLEND)
-                GL11.glDisable(GL11.GL_TEXTURE_2D)
-                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA)
-                GL11.glEnable(GL11.GL_LINE_SMOOTH)
-                GL11.glColor4f(0.15F, 0.15F, 0.15F, progress)
-                GL11.glBegin(GL11.GL_TRIANGLE_FAN)
-                GL11.glVertex2d((scaledResolution.scaledWidth / 2 - 3).toDouble(), (scaledResolution.scaledHeight - 60).toDouble())
-                GL11.glVertex2d((scaledResolution.scaledWidth / 2).toDouble(), (scaledResolution.scaledHeight - 57).toDouble())
-                GL11.glVertex2d((scaledResolution.scaledWidth / 2 + 3).toDouble(), (scaledResolution.scaledHeight - 60).toDouble())
-                GL11.glEnd()
-                GL11.glEnable(GL11.GL_TEXTURE_2D)
-                GL11.glDisable(GL11.GL_BLEND)
-                GL11.glDisable(GL11.GL_LINE_SMOOTH)
-                RenderUtils.drawRoundedRect((scaledResolution.scaledWidth / 2 - (infoWidth / 2) - 4).toFloat(), (scaledResolution.scaledHeight - 60).toFloat(), (scaledResolution.scaledWidth / 2 + (infoWidth / 2) + 4).toFloat(), (scaledResolution.scaledHeight - 74).toFloat(), 2F, Color(0.15F, 0.15F, 0.15F, progress).rgb)
-                GlStateManager.resetColor()
-                Fonts.fontSFUI35.drawCenteredString(info, (scaledResolution.scaledWidth / 2).toFloat() + 0.1F, (scaledResolution.scaledHeight - 70).toFloat(), Color(1F, 1F, 1F, 0.8F * progress).rgb, false)
-                GlStateManager.translate(0.0, (14F + (progress * 4F)).toDouble(), 0.0)
-            }
-            "novoline" -> {
-                if (slot in 0..8 && mc.thePlayer.inventory.mainInventory[slot] != null && mc.thePlayer.inventory.mainInventory[slot].item != null && mc.thePlayer.inventory.mainInventory[slot].item is ItemBlock) {
-                    GlStateManager.pushMatrix()
-                    GlStateManager.translate((scaledResolution.scaledWidth / 2 - 22).toDouble(), (scaledResolution.scaledHeight / 2 + 16).toDouble(), (scaledResolution.scaledWidth / 2 - 22).toDouble())
-                    renderItemStack(mc.thePlayer.inventory.mainInventory[slot], 0, 0)
-                    GlStateManager.popMatrix()
-                }
-                GlStateManager.resetColor()
-
-                Fonts.minecraftFont.drawString(info, (scaledResolution.scaledWidth / 2).toFloat(), (scaledResolution.scaledHeight / 2 + 20).toFloat(), -1, true)
-            }
-            "rise" -> {
-                GlStateManager.pushMatrix()
-                val info = blocksAmount.toString()
-                val slot = InventoryUtils.findAutoBlockBlock()
-                val scaledResolution = ScaledResolution(mc)
-                val height = scaledResolution.scaledHeight
-                val width = scaledResolution.scaledWidth
-                val w2 = mc.fontRendererObj.getStringWidth(info)
-                RenderUtils.drawRoundedCornerRect((width - w2 - 20) / 2f, height * 0.8f - 24f, (width + w2 + 18) / 2f, height * 0.8f + 12f, 5f, Color(20, 20, 20, 100).rgb)
-                var stack = ItemStack(Item.getItemById(166), 0, 0)
-                if (slot != -1) {
-                    if (mc.thePlayer.inventory.getCurrentItem() != null) {
-                        val handItem = mc.thePlayer.inventory.getCurrentItem().item
-                        if (handItem is ItemBlock && InventoryUtils.isBlockListBlock(handItem.block)) {
-                            stack = mc.thePlayer.inventory.getCurrentItem()
-                        }
-                    }
-                    if (stack == ItemStack(Item.getItemById(166), 0, 0)) {
-                        stack = mc.thePlayer.inventory.getStackInSlot(InventoryUtils.findAutoBlockBlock() - 36)
-                        if (stack == null) {
-                            stack = ItemStack(Item.getItemById(166), 0, 0)
-                        }
-                    }
-                }
-
-                RenderHelper.enableGUIStandardItemLighting()
-                GlStateManager.enableBlend()
-                mc.renderItem.renderItemIntoGUI(stack, width / 2 - 9, (height * 0.8 - 20).toInt())
-                RenderHelper.disableStandardItemLighting()
-                mc.fontRendererObj.drawString(info, width / 2f, height * 0.8f, Color(255,255,255).rgb, false)
-                GlStateManager.disableAlpha()
-                GlStateManager.disableBlend()
-                GlStateManager.popMatrix()
-            }
-        }
-    }
-
-    private fun renderItemStack(stack: ItemStack, x: Int, y: Int) {
-        GlStateManager.pushMatrix()
-        GlStateManager.enableRescaleNormal()
-        GlStateManager.enableBlend()
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0)
-        RenderHelper.enableGUIStandardItemLighting()
-        mc.renderItem.renderItemAndEffectIntoGUI(stack, x, y)
-        mc.renderItem.renderItemOverlays(mc.fontRendererObj, stack, x, y)
-        RenderHelper.disableStandardItemLighting()
-        GlStateManager.disableRescaleNormal()
-        GlStateManager.disableBlend()
-        GlStateManager.popMatrix()
     }
 
     @EventTarget
@@ -657,7 +543,7 @@ class Scaffold: Module() {
             )
             val placeInfo = get(blockPos)
             if (BlockUtils.isReplaceable(blockPos) && placeInfo != null) {
-                RenderUtils.drawBlockBox(blockPos, Color(redValue.get(), greenValue.get(), blueValue.get(), 100), false)
+                RenderUtils.drawBlockBox(blockPos, Color(redValue.get(), greenValue.get(), blueValue.get(), 100), false, true)
                 break
             }
         }

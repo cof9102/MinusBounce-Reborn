@@ -106,8 +106,6 @@ object Animations : Module() {
         Sword.get().equals("minecraft", ignoreCase = true)
     }
 
-    val fakeBlocking = BoolValue("Fake-Blocking", true)
-
     // block crack
     val noBlockParticles = BoolValue("NoBlockParticles", false)
 }

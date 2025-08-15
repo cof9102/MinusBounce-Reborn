@@ -36,7 +36,6 @@ object MinusBounce {
     // Client information
     const val CLIENT_NAME = "MinusBounce"
     const val CLIENT_FOLDER = "MinusBounce"
-    const val CLIENT_VERSION = "dev"
     const val CLIENT_CREATOR = "CCBlueX, MinusMC Team"
     val API_VERSION = PluginAPIVersion.VER_01
     const val CLIENT_CLOUD = "https://minusmc.github.io/MinusCloud/LiquidBounce"
@@ -67,7 +66,7 @@ object MinusBounce {
      */
     
     fun addMenuButton(name: String, gui: Class<out GuiScreen>) {
-        PluginGuiManager.mainMenuButton[name] = gui
+        PluginGuiManager.guiButton[name] = gui
     }
 
     fun startClient() {

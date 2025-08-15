@@ -5,12 +5,24 @@
  */
 package net.minusmc.minusbounce.features.module.modules.world
 
+import net.minusmc.minusbounce.event.EventTarget
+import net.minusmc.minusbounce.event.Render2DEvent
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.value.IntegerValue
+import net.minusmc.minusbounce.value.BoolValue
+import net.minecraft.item.ItemBlock
 
 @ModuleInfo(name = "FastPlace", spacedName = "Fast Place", description = "Allows you to place blocks faster.", category = ModuleCategory.WORLD)
 class FastPlace : Module() {
     val speedValue = IntegerValue("Speed", 0, 0, 4)
+    val onlyBlock = BoolValue("OnlyBlock", true)
+
+    @EventTarget
+    fun onRender2D(event: Render2DEvent?) {
+        if (!onlyBlock.get() || mc.thePlayer.heldItem != null && mc.thePlayer?.inventory?.getCurrentItem()?.item is ItemBlock) {
+            mc.rightClickDelayTimer = speedValue.get()
+        }
+    }
 }

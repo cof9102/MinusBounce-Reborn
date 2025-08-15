@@ -354,11 +354,6 @@ object RenderUtils : MinecraftInstance() {
         drawRect(x, y, x2, y2, Color(18f / 255f, 18 / 255f, 18f / 255f, alpha).rgb)
     }
 
-    fun drawMosswareRect(x: Float, y: Float, x2: Float, y2: Float, width: Float, color1: Int, color2: Int) {
-        drawRect(x, y, x2, y2, color2)
-        drawBorder(x, y, x2, y2, width, color1)
-    }
-
     fun skyRainbow(var2: Int, st: Float, bright: Float): Color {
         var v1 = ceil((System.currentTimeMillis() + (var2 * 109).toLong()).toDouble()) / 5
         return Color.getHSBColor(if ((360.0.also { v1 %= it } / 360.0).toFloat()
@@ -933,7 +928,7 @@ object RenderUtils : MinecraftInstance() {
         glShadeModel(7424)
     }
 
-    fun drawBlockBox(blockPos: BlockPos, color: Color, outline: Boolean) {
+    fun drawBlockBox(blockPos: BlockPos, color: Color, outline: Boolean, box: Boolean) {
         val renderManager = mc.renderManager
         val timer = mc.timer
         val x = blockPos.x - renderManager.renderPosX
@@ -954,8 +949,10 @@ object RenderUtils : MinecraftInstance() {
         enableGlCap(GL_BLEND)
         disableGlCap(GL_TEXTURE_2D, GL_DEPTH_TEST)
         glDepthMask(false)
-        glColor(color.red, color.green, color.blue, if (color.alpha != 255) color.alpha else if (outline) 26 else 35)
-        drawFilledBox(axisAlignedBB)
+        if (box) {
+            glColor(color.red, color.green, color.blue, if (color.alpha != 255) color.alpha else if (outline) 26 else 35)
+            drawFilledBox(axisAlignedBB)
+        }
         if (outline) {
             glLineWidth(1f)
             enableGlCap(GL_LINE_SMOOTH)
@@ -965,6 +962,22 @@ object RenderUtils : MinecraftInstance() {
         GlStateManager.resetColor()
         glDepthMask(true)
         resetCaps()
+    }
+    fun renderItemIcon(x: Int, y: Int, itemStack: ItemStack?) {
+        if (itemStack != null && itemStack.item != null) {
+            GlStateManager.pushMatrix()
+            GlStateManager.enableRescaleNormal()
+            GlStateManager.enableBlend()
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0)
+            RenderHelper.enableGUIStandardItemLighting()
+
+            mc.renderItem.renderItemIntoGUI(itemStack, x, y)
+
+            GlStateManager.disableRescaleNormal()
+            GlStateManager.disableBlend()
+            RenderHelper.disableStandardItemLighting()
+            GlStateManager.popMatrix()
+        }
     }
 
     fun drawShadow(x: Float, y: Float, width: Float, height: Float) {
@@ -1265,7 +1278,6 @@ object RenderUtils : MinecraftInstance() {
         glVertex2d(x2.toDouble(), y2.toDouble())
         glEnd()
     }
-
     fun drawRect(x: Float, y: Float, x2: Float, y2: Float, color: Color) {
         drawRect(x, y, x2, y2, color.rgb)
     }

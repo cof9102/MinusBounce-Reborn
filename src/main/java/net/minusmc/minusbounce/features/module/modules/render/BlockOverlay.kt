@@ -18,6 +18,7 @@ import net.minusmc.minusbounce.utils.render.ColorUtils.rainbow
 import net.minusmc.minusbounce.utils.render.RenderUtils
 import net.minusmc.minusbounce.value.BoolValue
 import net.minusmc.minusbounce.value.IntegerValue
+import net.minusmc.minusbounce.features.module.modules.render.ClientTheme
 import net.minecraft.block.Block
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.renderer.GlStateManager
@@ -27,10 +28,11 @@ import java.awt.Color
 
 @ModuleInfo(name = "BlockOverlay", spacedName = "Block Overlay", description = "Allows you to change the design of the block overlay.", category = ModuleCategory.RENDER)
 class BlockOverlay : Module() {
-    private val colorRedValue = IntegerValue("R", 68, 0, 255)
-    private val colorGreenValue = IntegerValue("G", 117, 0, 255)
-    private val colorBlueValue = IntegerValue("B", 255, 0, 255)
-    private val colorRainbow = BoolValue("Rainbow", false)
+    private val clientTheme = BoolValue("ClientTheme", false)
+    private val colorRedValue = IntegerValue("Red", 68, 0, 255)
+    private val colorGreenValue = IntegerValue("Green", 117, 0, 255)
+    private val colorBlueValue = IntegerValue("Blue", 255, 0, 255)
+    private val colorAlphaValue = IntegerValue("Alpha", 100, 0, 255)
     val infoValue = BoolValue("Info", false)
 
     val currentBlock: BlockPos?
@@ -48,8 +50,7 @@ class BlockOverlay : Module() {
         val blockPos = currentBlock ?: return
         val block = mc.theWorld.getBlockState(blockPos).block ?: return
         val partialTicks = event.partialTicks
-        val color = if (colorRainbow.get()) rainbow(0.4F) else Color(colorRedValue.get(),
-            colorGreenValue.get(), colorBlueValue.get(), (0.4F * 255).toInt())
+        val color = if (clientTheme.get()) ClientTheme.getColorWithAlpha(1, colorAlphaValue.get()) else Color(colorRedValue.get(), colorGreenValue.get(), colorBlueValue.get(), colorAlphaValue.get())
 
         GlStateManager.enableBlend()
         GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO)

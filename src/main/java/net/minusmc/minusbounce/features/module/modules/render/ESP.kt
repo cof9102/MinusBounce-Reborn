@@ -14,6 +14,7 @@ import net.minusmc.minusbounce.event.Render3DEvent
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
+import net.minusmc.minusbounce.features.module.modules.render.ClientTheme
 import net.minusmc.minusbounce.ui.font.GameFontRenderer.Companion.getColorIndex
 import net.minusmc.minusbounce.utils.ClientUtils
 import net.minusmc.minusbounce.utils.EntityUtils
@@ -73,7 +74,7 @@ class ESP : Module() {
         modeValue.get().equals("shaderglow", ignoreCase = true)
     }
     private val colorModeValue =
-        ListValue("Color", arrayOf("Custom", "Health", "Rainbow", "Sky", "LiquidSlowly", "Fade"), "Custom")
+        ListValue("Color", arrayOf("Custom", "Health", "Rainbow", "Sky", "LiquidSlowly", "Fade", "Theme"), "Custom")
     private val colorRedValue = IntegerValue("Red", 255, 0, 255)
     private val colorGreenValue = IntegerValue("Green", 255, 0, 255)
     private val colorBlueValue = IntegerValue("Blue", 255, 0, 255)
@@ -356,6 +357,7 @@ class ESP : Module() {
             }
         }
         return when (colorModeValue.get()) {
+            "Theme" -> ClientTheme.getColorWithAlpha(0, 80)
             "Custom" -> Color(colorRedValue.get(), colorGreenValue.get(), colorBlueValue.get())
             "Rainbow" -> Color(
                 ColorUtils.getRainbowOpaque(

@@ -15,7 +15,6 @@ import net.minusmc.minusbounce.ui.client.hud.element.Border
 import net.minusmc.minusbounce.ui.client.hud.element.Element
 import net.minusmc.minusbounce.ui.client.hud.element.ElementInfo
 import net.minusmc.minusbounce.ui.client.hud.element.elements.targets.TargetStyle
-import net.minusmc.minusbounce.ui.client.hud.element.elements.targets.impl.Chill
 import net.minusmc.minusbounce.utils.ClassUtils
 import net.minusmc.minusbounce.utils.extensions.getDistanceToEntityBox
 import net.minusmc.minusbounce.utils.render.*
@@ -189,11 +188,6 @@ class Target : Element() {
             GL11.glTranslatef(calcTranslateX, calcTranslateY, 0F)
             GL11.glScalef(1F - calcScaleX, 1F - calcScaleY, 1F - calcScaleX)
         }
-
-        if (mainStyle is Chill)
-            mainStyle.updateData(renderX.toFloat() + calcTranslateX, renderY.toFloat() + calcTranslateY, calcScaleX, calcScaleY)
-        mainStyle.drawTarget(convertTarget)
-
         if (fadeValue.get())
             GL11.glPopMatrix()
 
@@ -205,7 +199,6 @@ class Target : Element() {
         if (mainTarget != null && ent == mainTarget)
             style.handleDamage(ent)
     }
-
     fun getFadeProgress() = animProgress
 
     override val values = super.values.toMutableList().also {

@@ -16,6 +16,7 @@ import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
 import net.minusmc.minusbounce.features.module.modules.combat.KillAura
+import net.minusmc.minusbounce.features.module.modules.render.ClientTheme
 import net.minusmc.minusbounce.ui.font.GameFontRenderer.Companion.getColorIndex
 import net.minusmc.minusbounce.utils.render.AnimationUtils
 import net.minusmc.minusbounce.utils.render.BlendUtils
@@ -200,6 +201,7 @@ class TargetMark : Module() {
             }
         }
         return when (colorModeValue.get()) {
+            "Theme" -> ClientTheme.getColorWithAlpha(0, colorAlphaValue.get())
             "Custom" -> Color(colorRedValue.get(), colorGreenValue.get(), colorBlueValue.get())
             "Rainbow" -> Color(
                 RenderUtils.getRainbowOpaque(

@@ -7,6 +7,8 @@ package net.minusmc.minusbounce.injection.forge.mixins.client;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiScreen;
@@ -36,7 +38,6 @@ import net.minusmc.minusbounce.features.module.modules.combat.AutoClicker;
 import net.minusmc.minusbounce.features.module.modules.combat.TickBase;
 import net.minusmc.minusbounce.features.module.modules.exploit.MultiActions;
 import net.minusmc.minusbounce.features.module.modules.misc.Patcher;
-import net.minusmc.minusbounce.features.module.modules.world.FastPlace;
 import net.minusmc.minusbounce.injection.forge.mixins.accessors.MinecraftForgeClientAccessor;
 import net.minusmc.minusbounce.ui.client.GuiMainMenu;
 import net.minusmc.minusbounce.utils.CPSCounter;
@@ -61,6 +62,7 @@ import java.util.concurrent.FutureTask;
 
 @Mixin(Minecraft.class)
 public abstract class MixinMinecraft {
+    Minecraft mc = Minecraft.getMinecraft();
 
     @Shadow
     public GuiScreen currentScreen;
@@ -217,7 +219,7 @@ public abstract class MixinMinecraft {
 
     @Inject(method = "createDisplay", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/Display;setTitle(Ljava/lang/String;)V", shift = At.Shift.AFTER))
     private void createDisplay(CallbackInfo callbackInfo) {
-        Display.setTitle(MinusBounce.CLIENT_NAME + " Reborn " + MinusBounce.CLIENT_VERSION);
+        Display.setTitle(MinusBounce.CLIENT_NAME + " Reborn");
     }
 
     @Inject(method = "runGameLoop", at = @At(value = "INVOKE", target = "Lnet/minecraft/profiler/Profiler;startSection(Ljava/lang/String;)V", ordinal = 1))
@@ -469,17 +471,6 @@ public abstract class MixinMinecraft {
     @Inject(method = "middleClickMouse", at = @At("HEAD"))
     private void middleClickMouse(CallbackInfo ci) {
         CPSCounter.INSTANCE.registerClick(CPSCounter.MouseButton.MIDDLE);
-    }
-
-    @Inject(method = "rightClickMouse", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;rightClickDelayTimer:I", shift = At.Shift.AFTER))
-    private void rightClickMouse(final CallbackInfo callbackInfo) {
-        CPSCounter.INSTANCE.registerClick(CPSCounter.MouseButton.RIGHT);
-
-        final FastPlace fastPlace = MinusBounce.moduleManager.getModule(FastPlace.class);
-
-        assert fastPlace != null;
-        if (fastPlace.getState())
-            rightClickDelayTimer = fastPlace.getSpeedValue().get();
     }
 
     @Inject(method = "loadWorld(Lnet/minecraft/client/multiplayer/WorldClient;Ljava/lang/String;)V", at = @At("HEAD"))

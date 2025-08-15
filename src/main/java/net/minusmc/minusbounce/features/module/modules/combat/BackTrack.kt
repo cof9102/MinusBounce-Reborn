@@ -10,6 +10,7 @@ import net.minusmc.minusbounce.event.*
 import net.minusmc.minusbounce.features.module.Module
 import net.minusmc.minusbounce.features.module.ModuleCategory
 import net.minusmc.minusbounce.features.module.ModuleInfo
+import net.minusmc.minusbounce.features.module.modules.render.ClientTheme
 import net.minusmc.minusbounce.features.module.modules.world.Scaffold
 import net.minusmc.minusbounce.utils.Constants
 import net.minusmc.minusbounce.utils.render.ColorUtils
@@ -172,23 +173,33 @@ class BackTrack : Module() {
         if (targetDistance >= realDistance || realDistance > hitRange.get() || timer.hasTimePassed(delay) || canFlushPacket)
             render = false
 
-        if (target != mc.thePlayer && !target.isInvisible && render) {
-            val color = ColorUtils.getColor(210.0F, 0.7F, 0.75F)
-            val x = realX - mc.renderManager.renderPosX
-            val y = realY - mc.renderManager.renderPosY
-            val z = realZ - mc.renderManager.renderPosZ
+    if (target != mc.thePlayer && !target.isInvisible && render) {
+        val color = ClientTheme.getColorWithAlpha(0, 80)
 
-            GlStateManager.pushMatrix()
-            RenderUtils.start3D()
-            RenderUtils.color(color)
-            RenderUtils.renderHitbox(AxisAlignedBB(x - target.width / 2, y, z - target.width / 2, x + target.width / 2, y + target.height, z + target.width / 2), GL11.GL_QUADS)
-            RenderUtils.color(color)
-            RenderUtils.renderHitbox(AxisAlignedBB(x - target.width / 2, y, z - target.width / 2, x + target.width / 2, y + target.height, z + target.width / 2), GL11.GL_LINE_LOOP)
-            RenderUtils.stop3D()
-            GlStateManager.popMatrix()
-        }
+        val x = realX - mc.renderManager.renderPosX
+        val y = realY - mc.renderManager.renderPosY
+        val z = realZ - mc.renderManager.renderPosZ
+
+        GlStateManager.pushMatrix()
+        RenderUtils.start3D()
+        RenderUtils.renderHitbox(
+            AxisAlignedBB(
+                x - target.width / 2, y, z - target.width / 2,
+                x + target.width / 2, y + target.height, z + target.width / 2
+            ),
+            GL11.GL_QUADS
+        )
+        RenderUtils.renderHitbox(
+            AxisAlignedBB(
+                x - target.width / 2, y, z - target.width / 2,
+                x + target.width / 2, y + target.height, z + target.width / 2
+            ),
+            GL11.GL_LINE_LOOP
+        )
+        RenderUtils.stop3D()
+        GlStateManager.popMatrix()
     }
-
+}
     private fun flushPackets() {
         if (packets.isEmpty())
             return

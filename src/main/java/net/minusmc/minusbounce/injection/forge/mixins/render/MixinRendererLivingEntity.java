@@ -48,7 +48,6 @@ public abstract class MixinRendererLivingEntity extends MixinRender {
 
         if (!ESP.renderNameTags 
             || (MinusBounce.moduleManager.getModule(NameTags.class).getState() && ((MinusBounce.moduleManager.getModule(NameTags.class).getLocalValue().get() && entity == Minecraft.getMinecraft().thePlayer && (!MinusBounce.moduleManager.getModule(NameTags.class).getNfpValue().get() || Minecraft.getMinecraft().gameSettings.thirdPersonView != 0)) || EntityUtils.INSTANCE.isSelected(entity, false)))
-                || ESP2D.Companion.shouldCancelNameTag(entity)
             || (noRender.getState() && noRender.getNameTagsValue().get()))
             callbackInfoReturnable.setReturnValue(false);
     }
